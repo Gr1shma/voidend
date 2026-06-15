@@ -2,11 +2,18 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "~/server/db";
 import { endpoints_table, projects_table } from "~/server/db/schema";
 import { and, eq } from "drizzle-orm";
-import { resolveSchema } from "~/lib/schema-resolver";
+import { getData, generateAndSaveData } from "~/lib/endpoint-data-store";
 
 interface Params {
     projectId: string;
     path: string[];
+}
+
+const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
+type HttpMethod = (typeof METHODS)[number];
+
+function isValidMethod(m: string): m is HttpMethod {
+    return METHODS.includes(m as HttpMethod);
 }
 
 function matchPath(pattern: string, incoming: string): boolean {
@@ -18,6 +25,10 @@ async function handler(req: NextRequest, { params }: { params: Params }) {
     const { projectId, path } = params;
     const incomingPath = "/" + path.join("/");
     const method = req.method;
+
+    if (!isValidMethod(method)) {
+        return NextResponse.json({ error: "Method not allowed" }, { status: 405 });
+    }
 
     const project = await db.query.projects_table.findFirst({
         where: eq(projects_table.id, projectId),
@@ -31,17 +42,6 @@ async function handler(req: NextRequest, { params }: { params: Params }) {
     const strippedPath = incomingPath.startsWith(basePath)
         ? incomingPath.slice(basePath.length) || "/"
         : incomingPath;
-
-    const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
-    type HttpMethod = (typeof METHODS)[number];
-
-    function isValidMethod(m: string): m is HttpMethod {
-        return METHODS.includes(m as HttpMethod);
-    }
-
-    if (!isValidMethod(method)) {
-        return NextResponse.json({ error: "Method not allowed" }, { status: 405 });
-    }
 
     const candidates = await db.query.endpoints_table.findMany({
         where: and(eq(endpoints_table.projectId, projectId), eq(endpoints_table.method, method)),
@@ -63,11 +63,14 @@ async function handler(req: NextRequest, { params }: { params: Params }) {
         });
     }
 
-    const count = endpoint.responseCount ?? 1;
     const data =
-        count > 1
-            ? Array.from({ length: count }, () => resolveSchema(endpoint.responseSchema))
-            : resolveSchema(endpoint.responseSchema);
+        getData(projectId, endpoint.id) ??
+        generateAndSaveData(
+            projectId,
+            endpoint.id,
+            endpoint.responseSchema,
+            endpoint.responseCount ?? 1,
+        );
 
     return NextResponse.json(data, {
         status: endpoint.statusCode,

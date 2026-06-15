@@ -2,10 +2,13 @@ import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import z from "zod";
 import { endpoints_table } from "~/server/db/schema";
 import { eq } from "drizzle-orm";
+import { generateAndSaveData, invalidateEndpointData } from "~/lib/endpoint-data-store";
 
 const HttpMethod = z.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]);
 
 const responseSchemaShape = z.record(z.string(), z.unknown());
+
+const CACHE_BUSTING_FIELDS = ["responseSchema", "responseCount"] as const;
 
 export const endpointRouter = createTRPCRouter({
     create: publicProcedure
@@ -27,6 +30,14 @@ export const endpointRouter = createTRPCRouter({
         )
         .mutation(async ({ ctx, input }) => {
             const [endpoint] = await ctx.db.insert(endpoints_table).values(input).returning();
+
+            generateAndSaveData(
+                endpoint!.projectId,
+                endpoint!.id,
+                endpoint!.responseSchema,
+                endpoint!.responseCount ?? 1,
+            );
+
             return endpoint;
         }),
 
@@ -80,12 +91,33 @@ export const endpointRouter = createTRPCRouter({
                 .set(data)
                 .where(eq(endpoints_table.id, id))
                 .returning();
+
+            const needsRegeneration = CACHE_BUSTING_FIELDS.some((field) => field in data);
+
+            if (needsRegeneration) {
+                invalidateEndpointData(updated!.projectId, updated!.id);
+                generateAndSaveData(
+                    updated!.projectId,
+                    updated!.id,
+                    updated!.responseSchema,
+                    updated!.responseCount ?? 1,
+                );
+            }
+
             return updated;
         }),
 
     delete: publicProcedure
         .input(z.object({ id: z.string().uuid() }))
         .mutation(async ({ ctx, input }) => {
+            const endpoint = await ctx.db.query.endpoints_table.findFirst({
+                where: (e, { eq }) => eq(e.id, input.id),
+            });
+
+            if (endpoint) {
+                invalidateEndpointData(endpoint.projectId, endpoint.id);
+            }
+
             await ctx.db.delete(endpoints_table).where(eq(endpoints_table.id, input.id));
         }),
 

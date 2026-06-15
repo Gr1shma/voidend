@@ -2,6 +2,7 @@ import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import z from "zod";
 import { projects_table } from "~/server/db/schema";
 import { eq } from "drizzle-orm";
+import { deleteProjectData } from "~/lib/endpoint-data-store";
 
 export const projectRouter = createTRPCRouter({
     create: publicProcedure
@@ -53,6 +54,7 @@ export const projectRouter = createTRPCRouter({
     delete: publicProcedure
         .input(z.object({ id: z.string().uuid() }))
         .mutation(async ({ ctx, input }) => {
+            deleteProjectData(input.id);
             await ctx.db.delete(projects_table).where(eq(projects_table.id, input.id));
         }),
 });
