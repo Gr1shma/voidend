@@ -10,11 +10,11 @@
     --card-foreground: oklch(0.25 0.05 325);
     --popover: oklch(1 0 0);
     --popover-foreground: oklch(0.25 0.05 325);
-    
+
     /* Primary deep berry button ("Quick Create") */
     --primary: oklch(0.48 0.14 340);
     --primary-foreground: oklch(0.98 0.01 320);
-    
+
     /* Secondary and accent states matching the sidebar layout */
     --secondary: oklch(0.92 0.03 325);
     --secondary-foreground: oklch(0.35 0.08 335);
@@ -22,20 +22,20 @@
     --muted-foreground: oklch(0.5 0.04 325);
     --accent: oklch(0.94 0.025 325);
     --accent-foreground: oklch(0.45 0.12 340);
-    
+
     --destructive: oklch(0.55 0.22 25);
     --destructive-foreground: oklch(0.98 0.01 25);
     --border: oklch(0.88 0.02 320);
     --input: oklch(0.88 0.02 320);
     --ring: oklch(0.48 0.14 340);
-    
+
     /* Charts (Beautiful magenta and violet curves) */
     --chart-1: oklch(0.65 0.22 340);
     --chart-2: oklch(0.55 0.18 310);
     --chart-3: oklch(0.75 0.14 330);
     --chart-4: oklch(0.45 0.15 300);
     --chart-5: oklch(0.85 0.08 340);
-    
+
     /* Sidebar matching the container layout */
     --sidebar: oklch(0.955 0.025 325);
     --sidebar-foreground: oklch(0.3 0.06 330);
@@ -81,31 +81,31 @@
     --card-foreground: oklch(0.95 0.015 315);
     --popover: oklch(0.16 0.015 315);
     --popover-foreground: oklch(0.95 0.015 315);
-    
+
     /* Neon vibrant berry accent buttons */
     --primary: oklch(0.55 0.21 342);
     --primary-foreground: oklch(0.99 0.005 315);
-    
+
     --secondary: oklch(0.22 0.02 315);
     --secondary-foreground: oklch(0.92 0.015 315);
     --muted: oklch(0.22 0.02 315);
     --muted-foreground: oklch(0.65 0.02 315);
     --accent: oklch(0.24 0.03 315);
     --accent-foreground: oklch(0.65 0.18 342);
-    
+
     --destructive: oklch(0.45 0.19 27);
     --destructive-foreground: oklch(0.98 0.01 27);
     --border: oklch(0.24 0.015 315);
     --input: oklch(0.24 0.015 315);
     --ring: oklch(0.55 0.21 342);
-    
+
     /* Vibrant dark mode charts */
     --chart-1: oklch(0.62 0.22 342);
     --chart-2: oklch(0.52 0.18 305);
     --chart-3: oklch(0.72 0.15 335);
     --chart-4: oklch(0.42 0.14 295);
     --chart-5: oklch(0.82 0.09 342);
-    
+
     --sidebar: oklch(0.13 0.015 315);
     --sidebar-foreground: oklch(0.92 0.015 315);
     --sidebar-primary: oklch(0.55 0.21 342);

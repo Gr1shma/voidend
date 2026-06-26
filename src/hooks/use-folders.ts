@@ -11,7 +11,6 @@ export function useCreateFolder() {
   const utils = api.useUtils();
   return api.folder.create.useMutation({
     onSuccess: () => {
-      // Invalidate all folder queries globally (works for any project)
       void utils.folder.getByProject.invalidate();
     },
   });
@@ -21,7 +20,6 @@ export function useRenameFolder() {
   const utils = api.useUtils();
   return api.folder.update.useMutation({
     onSuccess: () => {
-      // Invalidate all folder queries globally (works for any project)
       void utils.folder.getByProject.invalidate();
     },
   });
@@ -31,7 +29,6 @@ export function useDeleteFolder() {
   const utils = api.useUtils();
   return api.folder.delete.useMutation({
     onSuccess: () => {
-      // Invalidate all folder queries globally (works for any project)
       void utils.folder.getByProject.invalidate();
     },
   });
