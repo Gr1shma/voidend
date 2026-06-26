@@ -9,6 +9,12 @@ import { EndpointBar } from "../components/dashboard/endpointBar";
 
 export function ApiClientLayout() {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [selectedEndpointId, setSelectedEndpointId] = useState<string | null>(
+    null,
+  );
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
+    null,
+  );
 
   return (
     <div className="h-full w-full flex border">
@@ -19,7 +25,12 @@ export function ApiClientLayout() {
         )}
       >
         <div className="h-full w-64">
-          <Sidebar />
+          <Sidebar
+            selectedEndpointId={selectedEndpointId}
+            onSelectEndpoint={setSelectedEndpointId}
+            selectedProjectId={selectedProjectId}
+            onSelectProject={setSelectedProjectId}
+          />
         </div>
       </div>
 
@@ -39,7 +50,7 @@ export function ApiClientLayout() {
             )}
           </Button>
         </div>
-        <EndpointBar />
+        {selectedProjectId && <EndpointBar projectId={selectedProjectId} />}
       </div>
     </div>
   );

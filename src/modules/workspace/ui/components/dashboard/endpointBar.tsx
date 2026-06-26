@@ -2,12 +2,7 @@
 import { useState } from "react";
 import { SchemaBuilder } from "./schemaBuilder";
 
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from "~/components/ui/card";
+import { Card, CardContent } from "~/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -17,23 +12,24 @@ import {
 } from "~/components/ui/dialog";
 import { Plus } from "lucide-react";
 import { Button } from "~/components/ui/button";
+import { api } from "~/trpc/react";
 
-export const EndpointBar = () => {
+interface EndpointBarProps {
+  projectId: string;
+}
+
+export const EndpointBar = ({ projectId }: EndpointBarProps) => {
   const [isSchemaBuilderOpen, setIsSchemaBuilderOpen] = useState(false);
-
-  const handleResetAll = () => {
-    console.log("Resetting all resources...");
-  };
-
-  const handleGenerateAll = () => {
-    console.log("Generating all records...");
-  };
+  const { data: project } = api.project.getById.useQuery(
+    { id: projectId },
+    { enabled: !!projectId },
+  );
 
   return (
     <>
-      <div className="w-full  mx-auto p-6">
-        <Card className="border shadow-lg">
-          <CardContent className="p-6 space-y-5">
+      <div className="w-full mx-auto p-6">
+        <Card className="border shadow-lg bg-muted">
+          <CardContent className="p-6 space-y-5 ">
             {/* Heading */}
             <h2 className="text-xl font-bold font-mono tracking-tight">
               API endpoint
@@ -47,7 +43,10 @@ export const EndpointBar = () => {
               </span>
               <span className="text-zinc-400">/</span>
               <span className="bg-orange-100 dark:bg-orange-950/50 text-orange-700 dark:text-orange-400 px-1 rounded font-medium">
-                ghostEnd
+                {project?.basePath || "api"}
+              </span>
+              <span className="text-zinc-400 text-xs ml-2">
+                {project?.title && `(${project.title})`}
               </span>
             </div>
 
@@ -59,7 +58,7 @@ export const EndpointBar = () => {
                 onClick={() => setIsSchemaBuilderOpen(true)}
                 className="pt-2 pb-2"
               >
-                <Plus className="w-4 h-4 stroke-[3]" />
+                <Plus className="w-4 h-4 stroke-3" />
                 New resource
               </Button>
 
@@ -67,14 +66,12 @@ export const EndpointBar = () => {
               <div className="flex items-center gap-2 self-end sm:self-auto">
                 <Button
                   variant="secondary"
-                  onClick={handleGenerateAll}
                   className="bg-zinc-100 hover:bg-zinc-200 text-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200 h-10 font-medium rounded-xl text-sm px-4"
                 >
                   Generate all
                 </Button>
                 <Button
                   variant="secondary"
-                  onClick={handleResetAll}
                   className="bg-zinc-100 hover:bg-zinc-200 text-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200 h-10 font-medium rounded-xl text-sm px-4"
                 >
                   Reset all
@@ -94,7 +91,10 @@ export const EndpointBar = () => {
               </DialogTitle>
 
               <div className="w-full max-h-[85vh] overflow-y-auto rounded-lg">
-                <SchemaBuilder />
+                <SchemaBuilder
+                  projectId={projectId}
+                  onSuccess={() => setIsSchemaBuilderOpen(false)}
+                />
               </div>
             </DialogContent>
           </div>
