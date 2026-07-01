@@ -3,6 +3,7 @@ import z from "zod";
 import { endpoints_table } from "~/server/db/schema";
 import { eq } from "drizzle-orm";
 import { generateAndSaveData, invalidateEndpointData } from "~/lib/endpoint-data-store";
+import { TRPCError } from "@trpc/server";
 
 const HttpMethod = z.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]);
 
@@ -29,6 +30,22 @@ export const endpointRouter = createTRPCRouter({
             }),
         )
         .mutation(async ({ ctx, input }) => {
+            const existing = await ctx.db.query.endpoints_table.findFirst({
+                where: (e, { eq, and }) =>
+                    and(
+                        eq(e.projectId, input.projectId),
+                        eq(e.method, input.method),
+                        eq(e.path, input.path),
+                    ),
+            });
+
+            if (existing) {
+                throw new TRPCError({
+                    code: "CONFLICT",
+                    message: `An endpoint already exists for ${input.method} ${input.path} in this project.`,
+                });
+            }
+
             const [endpoint] = await ctx.db.insert(endpoints_table).values(input).returning();
 
             generateAndSaveData(
@@ -86,6 +103,36 @@ export const endpointRouter = createTRPCRouter({
         )
         .mutation(async ({ ctx, input }) => {
             const { id, ...data } = input;
+
+            if (data.method !== undefined || data.path !== undefined) {
+                const current = await ctx.db.query.endpoints_table.findFirst({
+                    where: (e, { eq }) => eq(e.id, id),
+                });
+
+                if (!current) {
+                    throw new TRPCError({ code: "NOT_FOUND", message: "Endpoint not found." });
+                }
+
+                const finalMethod = data.method ?? current.method;
+                const finalPath = data.path ?? current.path;
+
+                const conflict = await ctx.db.query.endpoints_table.findFirst({
+                    where: (e, { eq, and, ne }) =>
+                        and(
+                            eq(e.projectId, current.projectId),
+                            eq(e.method, finalMethod),
+                            eq(e.path, finalPath),
+                            ne(e.id, id),
+                        ),
+                });
+
+                if (conflict) {
+                    throw new TRPCError({
+                        code: "CONFLICT",
+                        message: `An endpoint already exists for ${finalMethod} ${finalPath} in this project.`,
+                    });
+                }
+            }
             const [updated] = await ctx.db
                 .update(endpoints_table)
                 .set(data)
