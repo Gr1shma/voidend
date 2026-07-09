@@ -20,7 +20,7 @@ type FolderTreeNodeProps = {
     isLast: boolean;
     projectId: string;
     selectedEndpointId: string | null;
-    onSelectEndpoint: (id: string) => void;
+    onSelectEndpoint: (id: string, projectId: string) => void;
     renamingId: string | null;
     setRenamingId: (id: string | null) => void;
     onRenameFolder: (id: string, name: string) => void;
@@ -115,7 +115,7 @@ export function FolderTreeNode({
                         level={level + 1}
                         isSelected={selectedEndpointId === endpoint.id}
                         isRenaming={renamingId === endpoint.id}
-                        onSelect={() => onSelectEndpoint(endpoint.id)}
+                        onSelect={() => onSelectEndpoint(endpoint.id, projectId)}
                         onRenameConfirm={(name) => {
                             onRenameEndpoint(endpoint.id, name);
                             setRenamingId(null);

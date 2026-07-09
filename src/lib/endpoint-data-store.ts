@@ -1,7 +1,7 @@
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { resolveSchema } from "./schema-resolver";
+import { resolveResponseData } from "./schema-resolver";
 
 function getDataDir(): string {
     switch (process.platform) {
@@ -38,10 +38,7 @@ export function generateAndSaveData(
     count: number,
 ): unknown {
     const filePath = getEndpointFilePath(projectId, endpointId);
-    const data =
-        count > 1
-            ? Array.from({ length: count }, () => resolveSchema(schema))
-            : resolveSchema(schema);
+    const data = resolveResponseData(schema, count);
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf-8");
     return data;
 }
