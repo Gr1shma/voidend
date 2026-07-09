@@ -79,9 +79,11 @@ export const endpointRouter = createTRPCRouter({
     getById: publicProcedure
         .input(z.object({ id: z.string().uuid() }))
         .query(async ({ ctx, input }) => {
-            return ctx.db.query.endpoints_table.findFirst({
+            const endpoint = await ctx.db.query.endpoints_table.findFirst({
                 where: (e, { eq }) => eq(e.id, input.id),
             });
+
+            return endpoint ?? null;
         }),
 
     update: publicProcedure
@@ -110,7 +112,10 @@ export const endpointRouter = createTRPCRouter({
                 });
 
                 if (!current) {
-                    throw new TRPCError({ code: "NOT_FOUND", message: "Endpoint not found." });
+                    throw new TRPCError({
+                        code: "NOT_FOUND",
+                        message: "Endpoint not found.",
+                    });
                 }
 
                 const finalMethod = data.method ?? current.method;
@@ -188,7 +193,7 @@ export const endpointRouter = createTRPCRouter({
                 ? input.path.slice(basePath.length) || "/"
                 : input.path;
 
-            return ctx.db.query.endpoints_table.findFirst({
+            const endpoint = await ctx.db.query.endpoints_table.findFirst({
                 where: (e, { eq, and }) =>
                     and(
                         eq(e.projectId, input.projectId),
@@ -196,5 +201,7 @@ export const endpointRouter = createTRPCRouter({
                         eq(e.path, strippedPath),
                     ),
             });
+
+            return endpoint ?? null;
         }),
 });

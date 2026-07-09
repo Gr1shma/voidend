@@ -27,9 +27,11 @@ export const projectRouter = createTRPCRouter({
     getById: publicProcedure
         .input(z.object({ id: z.string().uuid() }))
         .query(async ({ ctx, input }) => {
-            return ctx.db.query.projects_table.findFirst({
+            const project = await ctx.db.query.projects_table.findFirst({
                 where: (p, { eq }) => eq(p.id, input.id),
             });
+
+            return project ?? null;
         }),
 
     update: publicProcedure
