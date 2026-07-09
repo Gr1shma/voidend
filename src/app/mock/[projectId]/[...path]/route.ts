@@ -13,11 +13,22 @@ interface Params {
 const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
 type HttpMethod = (typeof METHODS)[number];
 
+const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
+    "Access-Control-Max-Age": "86400",
+};
+
 function isValidMethod(m: string): m is HttpMethod {
     return METHODS.includes(m as HttpMethod);
 }
 
 async function handler(req: NextRequest, { params }: { params: Params }) {
+    if (req.method === "OPTIONS") {
+        return new NextResponse(null, { status: 204, headers: corsHeaders });
+    }
+
     const { projectId, path } = params;
     const incomingPath = "/" + path.join("/");
     const method = req.method;
@@ -65,10 +76,16 @@ async function handler(req: NextRequest, { params }: { params: Params }) {
             endpoint.responseCount ?? 1,
         );
 
-    return NextResponse.json(data, {
+    const response = NextResponse.json(data, {
         status: endpoint.statusCode,
         headers: (endpoint.responseHeaders as Record<string, string>) ?? {},
     });
+
+    Object.entries(corsHeaders).forEach(([key, value]) => {
+        response.headers.set(key, value);
+    });
+
+    return response;
 }
 
 export const GET = handler;
@@ -76,3 +93,4 @@ export const POST = handler;
 export const PUT = handler;
 export const PATCH = handler;
 export const DELETE = handler;
+export const OPTIONS = async () => new NextResponse(null, { status: 204, headers: corsHeaders });
