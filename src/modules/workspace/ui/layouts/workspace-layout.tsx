@@ -57,7 +57,7 @@ export function ApiClientLayout({
                     >
                         <PanelLeftIcon className="h-4 w-4" />
                     </button>
-                    <span className="font-semibold text-sm text-center flex-1">ghostEnd</span>
+                    <span className="font-semibold text-sm text-center flex-1">voidend</span>
                     <button
                         onClick={() => sidebarRef.current?.openProjectModal()}
                         className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"

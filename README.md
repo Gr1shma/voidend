@@ -1,6 +1,6 @@
 <samp>
 
-# ghostEnd
+# voidend
 
 ## setup
 

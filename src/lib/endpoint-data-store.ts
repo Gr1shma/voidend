@@ -8,14 +8,14 @@ function getDataDir(): string {
         case "linux":
             return path.join(
                 process.env.XDG_DATA_HOME || path.join(os.homedir(), ".local/share"),
-                "ghostend",
+                "voidend",
             );
         case "darwin":
-            return path.join(os.homedir(), "Library/Application Support/ghostend");
+            return path.join(os.homedir(), "Library/Application Support/voidend");
         case "win32":
-            return path.join(process.env.APPDATA || os.homedir(), "ghostend");
+            return path.join(process.env.APPDATA || os.homedir(), "voidend");
         default:
-            return path.join(os.homedir(), ".ghostend");
+            return path.join(os.homedir(), ".voidend");
     }
 }
 

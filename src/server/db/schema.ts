@@ -1,7 +1,7 @@
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { index, pgTableCreator } from "drizzle-orm/pg-core";
 
-export const createTable = pgTableCreator((name) => `ghostend_${name}`);
+export const createTable = pgTableCreator((name) => `voidend_${name}`);
 
 export const projects_table = createTable(
     "projects",
