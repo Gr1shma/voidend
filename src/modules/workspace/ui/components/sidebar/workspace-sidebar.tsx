@@ -3,6 +3,7 @@
 import { forwardRef, useImperativeHandle, useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "~/components/ui/button";
+import { ConfirmDialog } from "~/components/confirm-dialog";
 import { TreeProvider, TreeView } from "~/components/kibo-ui/tree";
 import { CreateFolderDialog, CreateEndpointDialog, CreateProjectDialog } from "./dialogs";
 import { ProjectTreeNode } from "./sidebar-tree";
@@ -35,6 +36,12 @@ export const Sidebar = forwardRef<
     const { data: projects = [] } = useProjects();
     const [renamingId, setRenamingId] = useState<string | null>(null);
     const [modal, setModal] = useState<ModalTarget | null>(null);
+    const [confirmState, setConfirmState] = useState<{
+        open: boolean;
+        title: string;
+        description: string;
+        onConfirm: () => void;
+    } | null>(null);
 
     const createFolder = useCreateFolder();
     const deleteFolder = useDeleteFolder();
@@ -49,6 +56,10 @@ export const Sidebar = forwardRef<
     useImperativeHandle(ref, () => ({
         openProjectModal: () => setModal({ kind: "project" }),
     }));
+
+    const confirmDangerousAction = (title: string, description: string, onConfirm: () => void) => {
+        setConfirmState({ open: true, title, description, onConfirm });
+    };
 
     return (
         <>
@@ -91,9 +102,27 @@ export const Sidebar = forwardRef<
                                             updateEndpoint.mutate({ id, name })
                                         }
                                         onOpenModal={setModal}
-                                        onDeleteProject={(id) => deleteProject.mutate({ id })}
-                                        onDeleteFolder={(id) => deleteFolder.mutate({ id })}
-                                        onDeleteEndpoint={(id) => deleteEndpoint.mutate({ id })}
+                                        onDeleteProject={(id) =>
+                                            confirmDangerousAction(
+                                                "Delete project?",
+                                                "This will permanently remove the project and all its contents.",
+                                                () => deleteProject.mutate({ id }),
+                                            )
+                                        }
+                                        onDeleteFolder={(id) =>
+                                            confirmDangerousAction(
+                                                "Delete folder?",
+                                                "This will permanently delete the folder and everything inside it.",
+                                                () => deleteFolder.mutate({ id }),
+                                            )
+                                        }
+                                        onDeleteEndpoint={(id) =>
+                                            confirmDangerousAction(
+                                                "Delete endpoint?",
+                                                "This will permanently remove the endpoint from the project.",
+                                                () => deleteEndpoint.mutate({ id }),
+                                            )
+                                        }
                                     />
                                 ))}
                             </TreeView>
@@ -101,6 +130,24 @@ export const Sidebar = forwardRef<
                     )}
                 </div>
             </aside>
+
+            {confirmState ? (
+                <ConfirmDialog
+                    open={confirmState.open}
+                    onOpenChange={(open) => {
+                        if (!open) setConfirmState(null);
+                    }}
+                    title={confirmState.title}
+                    description={confirmState.description}
+                    confirmLabel="Delete"
+                    cancelLabel="Cancel"
+                    destructive
+                    onConfirm={() => {
+                        confirmState.onConfirm();
+                        setConfirmState(null);
+                    }}
+                />
+            ) : null}
 
             <CreateProjectDialog
                 open={modal?.kind === "project"}

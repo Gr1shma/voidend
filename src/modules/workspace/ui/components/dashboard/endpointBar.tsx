@@ -5,6 +5,7 @@ import { SchemaBuilder } from "./schemaBuilder";
 
 import { Card, CardContent } from "~/components/ui/card";
 import { Dialog, DialogContent, DialogTitle } from "~/components/ui/dialog";
+import { ConfirmDialog } from "~/components/confirm-dialog";
 import { Copy, Check, Settings2 } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { MethodBadge } from "~/modules/workspace/ui/components/sidebar/method-badge";
@@ -28,6 +29,7 @@ interface EndpointBarProps {
 export const EndpointBar = ({ projectId, mockOrigin, endpoint, project }: EndpointBarProps) => {
     const [isSchemaBuilderOpen, setIsSchemaBuilderOpen] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
     const updateEndpoint = useUpdateEndpoint();
 
     const mockPath = endpoint
@@ -54,6 +56,12 @@ export const EndpointBar = ({ projectId, mockOrigin, endpoint, project }: Endpoi
     };
 
     const handleResetAll = () => {
+        if (!endpoint) return;
+
+        setIsResetConfirmOpen(true);
+    };
+
+    const confirmResetAll = () => {
         if (!endpoint) return;
 
         updateEndpoint.mutate(
@@ -130,22 +138,15 @@ export const EndpointBar = ({ projectId, mockOrigin, endpoint, project }: Endpoi
                             </Button>
 
                             {/* Utility Bulk Actions */}
-                            <div className="flex items-center gap-2 self-end sm:self-auto">
-                                <Button
-                                    variant="secondary"
-                                    className="bg-zinc-100 hover:bg-zinc-200 text-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200 h-10 font-medium rounded-xl text-sm px-4"
-                                >
-                                    Generate all
-                                </Button>
-                                <Button
-                                    variant="secondary"
-                                    disabled={!endpoint || updateEndpoint.isPending}
-                                    onClick={handleResetAll}
-                                    className="bg-zinc-100 hover:bg-zinc-200 text-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200 h-10 font-medium rounded-xl text-sm px-4"
-                                >
-                                    {updateEndpoint.isPending ? "Resetting..." : "Reset all"}
-                                </Button>
-                            </div>
+
+                            <Button
+                                variant="secondary"
+                                disabled={!endpoint || updateEndpoint.isPending}
+                                onClick={handleResetAll}
+                                className="bg-zinc-100 hover:bg-zinc-200 text-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200 h-10 font-medium rounded-xl text-sm px-4"
+                            >
+                                {updateEndpoint.isPending ? "Resetting..." : "Reset all"}
+                            </Button>
                         </div>
                     </CardContent>
                 </Card>
@@ -164,6 +165,17 @@ export const EndpointBar = ({ projectId, mockOrigin, endpoint, project }: Endpoi
                     </div>
                 </DialogContent>
             </Dialog>
+
+            <ConfirmDialog
+                open={isResetConfirmOpen}
+                onOpenChange={setIsResetConfirmOpen}
+                title="Reset schema?"
+                description="This will restore the endpoint schema and response settings to the default values."
+                confirmLabel="Reset"
+                cancelLabel="Cancel"
+                destructive
+                onConfirm={confirmResetAll}
+            />
         </>
     );
 };
