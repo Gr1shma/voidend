@@ -23,6 +23,21 @@ import {
 import { useEndpoints } from "~/hooks/use-endpoints";
 import { useFolders } from "~/hooks/use-folders";
 
+function commitRename<T extends string>(
+    currentName: string,
+    nextName: string,
+    onRename: (name: T) => void,
+    onFinish: () => void,
+) {
+    const normalizedName = nextName.trim() || currentName;
+
+    if (normalizedName !== currentName) {
+        onRename(normalizedName as T);
+    }
+
+    onFinish();
+}
+
 export function EndpointTreeNode({
     endpoint,
     level,
@@ -46,7 +61,14 @@ export function EndpointTreeNode({
 }) {
     return (
         <TreeNode nodeId={endpoint.id} level={level} isLast={false}>
-            <TreeNodeTrigger className="group" onClick={onSelect}>
+            <TreeNodeTrigger
+                className="group"
+                onClick={onSelect}
+                onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    onRenameStart();
+                }}
+            >
                 <TreeExpander hasChildren={false} />
                 <TreeIcon hasChildren={false} />
                 {isRenaming ? (
@@ -110,15 +132,27 @@ export function FolderTreeNode({
 
     return (
         <TreeNode nodeId={collection.id} level={level} isLast={isLast}>
-            <TreeNodeTrigger className="group">
+            <TreeNodeTrigger
+                className="group"
+                onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    setRenamingId(collection.id);
+                }}
+            >
                 <TreeExpander hasChildren={hasChildren} />
                 <TreeIcon hasChildren={hasChildren} />
                 {renamingId === collection.id ? (
                     <InlineRename
                         defaultValue={collection.name}
                         onConfirm={(name) => {
-                            onRenameFolder(collection.id, name);
-                            setRenamingId(null);
+                            commitRename(
+                                collection.name,
+                                name,
+                                (nextName) => {
+                                    onRenameFolder(collection.id, nextName);
+                                },
+                                () => setRenamingId(null),
+                            );
                         }}
                         onCancel={() => setRenamingId(null)}
                     />
@@ -173,8 +207,14 @@ export function FolderTreeNode({
                         isRenaming={renamingId === endpoint.id}
                         onSelect={() => onSelectEndpoint(endpoint.id, projectId)}
                         onRenameConfirm={(name) => {
-                            onRenameEndpoint(endpoint.id, name);
-                            setRenamingId(null);
+                            commitRename(
+                                endpoint.name,
+                                name,
+                                (nextName) => {
+                                    onRenameEndpoint(endpoint.id, nextName);
+                                },
+                                () => setRenamingId(null),
+                            );
                         }}
                         onRenameCancel={() => setRenamingId(null)}
                         onRenameStart={() => setRenamingId(endpoint.id)}
@@ -240,15 +280,28 @@ export function ProjectTreeNode({
 
     return (
         <TreeNode nodeId={project.id} level={level} isLast={isLast}>
-            <TreeNodeTrigger className="group" onClick={() => onSelectProject(project.id)}>
+            <TreeNodeTrigger
+                className="group"
+                onClick={() => onSelectProject(project.id)}
+                onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    setRenamingId(project.id);
+                }}
+            >
                 <TreeExpander hasChildren />
                 <TreeIcon hasChildren />
                 {renamingId === project.id ? (
                     <InlineRename
                         defaultValue={project.title}
                         onConfirm={(name) => {
-                            onRenameProject(project.id, name);
-                            setRenamingId(null);
+                            commitRename(
+                                project.title,
+                                name,
+                                (nextName) => {
+                                    onRenameProject(project.id, nextName);
+                                },
+                                () => setRenamingId(null),
+                            );
                         }}
                         onCancel={() => setRenamingId(null)}
                     />
@@ -280,8 +333,14 @@ export function ProjectTreeNode({
                         isRenaming={renamingId === endpoint.id}
                         onSelect={() => onSelectEndpoint(endpoint.id, project.id)}
                         onRenameConfirm={(name) => {
-                            onRenameEndpoint(endpoint.id, name);
-                            setRenamingId(null);
+                            commitRename(
+                                endpoint.name,
+                                name,
+                                (nextName) => {
+                                    onRenameEndpoint(endpoint.id, nextName);
+                                },
+                                () => setRenamingId(null),
+                            );
                         }}
                         onRenameCancel={() => setRenamingId(null)}
                         onRenameStart={() => setRenamingId(endpoint.id)}
