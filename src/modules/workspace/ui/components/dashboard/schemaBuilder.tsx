@@ -55,12 +55,9 @@ function FieldLabel({ children, tooltip }: { children: React.ReactNode; tooltip:
             <Tooltip>
                 <TooltipTrigger
                     render={
-                        <button
-                            type="button"
-                            className="text-muted-foreground/60 hover:text-primary transition-colors"
-                        >
+                        <span className="inline-flex cursor-pointer text-muted-foreground/60 hover:text-primary transition-colors">
                             <Info className="h-3 w-3" />
-                        </button>
+                        </span>
                     }
                 />
                 <TooltipContent side="top" className="max-w-56 text-xs">
