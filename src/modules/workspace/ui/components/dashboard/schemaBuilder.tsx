@@ -122,6 +122,18 @@ export function SchemaBuilder({ endpoint, onSuccess }: SchemaBuilderProps) {
         );
     }, [fields, responseCount]);
 
+    const hasExistingSchema = useMemo(() => {
+        if (
+            !endpoint.responseSchema ||
+            typeof endpoint.responseSchema !== "object" ||
+            Array.isArray(endpoint.responseSchema)
+        ) {
+            return false;
+        }
+
+        return Object.keys(endpoint.responseSchema).length > 0;
+    }, [endpoint.responseSchema]);
+
     const handleSubmit = () => {
         if (!resourceName.trim()) {
             setNameError("Resource name is required.");
@@ -380,7 +392,11 @@ export function SchemaBuilder({ endpoint, onSuccess }: SchemaBuilderProps) {
                         disabled={updateEndpoint.isPending}
                         className="h-10 gap-2 font-semibold text-primary-foreground"
                     >
-                        {updateEndpoint.isPending ? "Saving..." : "Generate schema"}
+                        {updateEndpoint.isPending
+                            ? "Saving..."
+                            : hasExistingSchema
+                              ? "Update schema"
+                              : "Generate schema"}
                     </Button>
                 </div>
             </Card>
