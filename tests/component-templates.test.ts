@@ -454,18 +454,295 @@ describe("Component Templates Library", () => {
         });
     });
 
-    describe("COMPONENT_TEMPLATES registry", () => {
-        it("contains all 7 component templates", () => {
-            expect(COMPONENT_TEMPLATES.length).toBe(7);
-            expect(COMPONENT_TEMPLATES.map((t) => t.id)).toEqual([
-                "dynamic-grid",
-                "user-card",
-                "post-card",
-                "product-card",
-                "todo-list",
-                "transaction-row",
-                "comment-item",
-            ]);
+    it("contains all 7 component templates", () => {
+        expect(COMPONENT_TEMPLATES.length).toBe(7);
+        expect(COMPONENT_TEMPLATES.map((t) => t.id)).toEqual([
+            "dynamic-grid",
+            "user-card",
+            "post-card",
+            "product-card",
+            "todo-list",
+            "transaction-row",
+            "comment-item",
+        ]);
+    });
+
+    describe("Edge Cases & Schema Alignment", () => {
+        it("should match comment-item for /api/v1/comments with comments schema", () => {
+            const fields = [
+                { id: "1", fieldName: "id", dataType: "$faker.string.uuid" },
+                { id: "2", fieldName: "author", dataType: "$faker.person.fullName" },
+                { id: "3", fieldName: "comment", dataType: "$faker.lorem.paragraph" },
+                { id: "4", fieldName: "avatar", dataType: "$faker.image.avatar" },
+                { id: "5", fieldName: "createdAt", dataType: "$faker.date.recent" },
+            ];
+
+            const matches = getTopMatches(
+                fields,
+                "http://localhost:3000/mock/ea232485/api/v1/comments",
+            );
+            expect(matches[0]!.template.id).toBe("comment-item");
+        });
+
+        it("postCardTemplate does not reference non-existent post.title when schema has no title field", () => {
+            const fields = [
+                { id: "1", fieldName: "id", dataType: "$faker.string.uuid" },
+                { id: "2", fieldName: "author", dataType: "$faker.person.fullName" },
+                { id: "3", fieldName: "comment", dataType: "$faker.lorem.paragraph" },
+                { id: "4", fieldName: "avatar", dataType: "$faker.image.avatar" },
+                { id: "5", fieldName: "createdAt", dataType: "$faker.date.recent" },
+            ];
+
+            const code = generateCode(
+                postCardTemplate,
+                fields,
+                "http://localhost:3000/api/v1/posts",
+            );
+            expect(code).not.toContain("post.title");
+            expect(code).toContain("post.comment");
+            expect(code).toContain("post.author");
+        });
+
+        it("productCardTemplate does not reference non-existent product.name or product.price", () => {
+            const fields = [
+                { id: "1", fieldName: "custom_id", dataType: "$faker.string.uuid" },
+                { id: "2", fieldName: "description", dataType: "$faker.lorem.paragraph" },
+            ];
+
+            const code = generateCode(
+                productCardTemplate,
+                fields,
+                "http://localhost:3000/api/v1/products",
+            );
+            expect(code).not.toContain("product.name");
+            expect(code).not.toContain("product.price");
+            expect(code).toContain("custom_id");
+        });
+
+        it("userCardTemplate does not reference non-existent user.name when fullName is absent", () => {
+            const fields = [
+                { id: "1", fieldName: "user_id", dataType: "$faker.string.uuid" },
+                { id: "2", fieldName: "handle", dataType: "$faker.internet.username" },
+            ];
+
+            const code = generateCode(
+                userCardTemplate,
+                fields,
+                "http://localhost:3000/api/v1/users",
+            );
+            expect(code).not.toContain("user.name");
+            expect(code).toContain("user.handle");
+        });
+
+        it("todoListTemplate does not reference non-existent todo.title or todo.completed", () => {
+            const fields = [
+                { id: "1", fieldName: "task_id", dataType: "$faker.string.uuid" },
+                { id: "2", fieldName: "description", dataType: "$faker.lorem.sentence" },
+            ];
+
+            const code = generateCode(
+                todoListTemplate,
+                fields,
+                "http://localhost:3000/api/v1/todos",
+            );
+            expect(code).not.toContain("todo.title");
+            expect(code).not.toContain("todo.completed");
+            expect(code).toContain("todo.description");
+        });
+
+        it("transactionRowTemplate does not reference non-existent tx.amount or tx.date", () => {
+            const fields = [
+                { id: "1", fieldName: "tx_id", dataType: "$faker.string.uuid" },
+                { id: "2", fieldName: "merchant", dataType: "$faker.company.name" },
+            ];
+
+            const code = generateCode(
+                transactionRowTemplate,
+                fields,
+                "http://localhost:3000/api/v1/tx",
+            );
+            expect(code).not.toContain("tx.amount");
+            expect(code).not.toContain("tx.date");
+            expect(code).toContain("tx.merchant");
+        });
+    });
+
+    describe("Auth Config (TemplateOptions)", () => {
+        const commentFields = [
+            { id: "1", fieldName: "id", dataType: "$faker.string.uuid" },
+            { id: "2", fieldName: "author", dataType: "$faker.person.fullName" },
+            { id: "3", fieldName: "comment", dataType: "$faker.lorem.paragraph" },
+        ];
+        const URL = "http://localhost:3000/api/v1/protected";
+
+        describe("buildFetchHook", () => {
+            it("generates plain fetch (no auth) when options are omitted", () => {
+                const code = buildFetchHook("Test", URL, "Item");
+                expect(code).toContain(`fetch("${URL}")`);
+                expect(code).not.toContain("Authorization");
+                expect(code).not.toContain("Bearer");
+            });
+
+            it("generates plain fetch when requiresAuth is false", () => {
+                const code = buildFetchHook("Test", URL, "Item", { requiresAuth: false });
+                expect(code).toContain(`fetch("${URL}")`);
+                expect(code).not.toContain("Authorization");
+            });
+
+            it("generates Authorization header with placeholder when requiresAuth is true but no token provided", () => {
+                const code = buildFetchHook("Test", URL, "Item", { requiresAuth: true });
+                expect(code).toContain("Authorization");
+                expect(code).toContain("Bearer YOUR_TOKEN_HERE");
+                expect(code).toContain(URL);
+            });
+
+            it("generates Authorization header with actual token when bearerToken is provided", () => {
+                const code = buildFetchHook("Test", URL, "Item", {
+                    requiresAuth: true,
+                    bearerToken: "eyJhbGciOiJIUzI1NiJ9.test",
+                });
+                expect(code).toContain("Authorization");
+                expect(code).toContain("Bearer eyJhbGciOiJIUzI1NiJ9.test");
+            });
+        });
+
+        describe("generateCode with auth options", () => {
+            it("commentItemTemplate includes auth header in React fetch hook", () => {
+                const code = generateCode(commentItemTemplate, commentFields, URL, {
+                    requiresAuth: true,
+                    bearerToken: "tok_abc123",
+                });
+                expect(code).toContain("Authorization");
+                expect(code).toContain("Bearer tok_abc123");
+                expect(code).toContain(URL);
+            });
+
+            it("userCardTemplate includes auth header in React fetch hook", () => {
+                const fields = [
+                    { id: "1", fieldName: "id", dataType: "$faker.string.uuid" },
+                    { id: "2", fieldName: "name", dataType: "$faker.person.fullName" },
+                ];
+                const code = generateCode(userCardTemplate, fields, URL, {
+                    requiresAuth: true,
+                    bearerToken: "tok_user99",
+                });
+                expect(code).toContain("Authorization");
+                expect(code).toContain("Bearer tok_user99");
+            });
+
+            it("productCardTemplate includes auth header in React fetch hook", () => {
+                const fields = [
+                    { id: "1", fieldName: "id", dataType: "$faker.string.uuid" },
+                    { id: "2", fieldName: "name", dataType: "$faker.commerce.productName" },
+                    { id: "3", fieldName: "price", dataType: "$faker.commerce.price" },
+                ];
+                const code = generateCode(productCardTemplate, fields, URL, {
+                    requiresAuth: true,
+                    bearerToken: "tok_prod",
+                });
+                expect(code).toContain("Authorization");
+                expect(code).toContain("Bearer tok_prod");
+            });
+
+            it("todoListTemplate includes auth header in React fetch hook", () => {
+                const fields = [
+                    { id: "1", fieldName: "id", dataType: "$faker.string.uuid" },
+                    { id: "2", fieldName: "title", dataType: "$faker.lorem.words" },
+                    { id: "3", fieldName: "done", dataType: "$faker.datatype.boolean" },
+                ];
+                const code = generateCode(todoListTemplate, fields, URL, {
+                    requiresAuth: true,
+                    bearerToken: "tok_todo",
+                });
+                expect(code).toContain("Authorization");
+                expect(code).toContain("Bearer tok_todo");
+            });
+
+            it("transactionRowTemplate includes auth header in React fetch hook", () => {
+                const fields = [
+                    { id: "1", fieldName: "id", dataType: "$faker.string.uuid" },
+                    { id: "2", fieldName: "amount", dataType: "$faker.finance.amount" },
+                    { id: "3", fieldName: "date", dataType: "$faker.date.recent" },
+                ];
+                const code = generateCode(transactionRowTemplate, fields, URL, {
+                    requiresAuth: true,
+                    bearerToken: "tok_tx",
+                });
+                expect(code).toContain("Authorization");
+                expect(code).toContain("Bearer tok_tx");
+            });
+
+            it("dynamicGridTemplate includes auth header in React fetch hook", () => {
+                const fields = [
+                    { id: "1", fieldName: "id", dataType: "$faker.string.uuid" },
+                    { id: "2", fieldName: "label", dataType: "$faker.person.fullName" },
+                ];
+                const code = generateCode(dynamicGridTemplate, fields, URL, {
+                    requiresAuth: true,
+                    bearerToken: "tok_grid",
+                });
+                expect(code).toContain("Authorization");
+                expect(code).toContain("Bearer tok_grid");
+            });
+
+            it("postCardTemplate includes auth header in React fetch hook", () => {
+                const fields = [
+                    { id: "1", fieldName: "id", dataType: "$faker.string.uuid" },
+                    { id: "2", fieldName: "title", dataType: "$faker.book.title" },
+                    { id: "3", fieldName: "body", dataType: "$faker.lorem.paragraph" },
+                ];
+                const code = generateCode(postCardTemplate, fields, URL, {
+                    requiresAuth: true,
+                    bearerToken: "tok_post",
+                });
+                expect(code).toContain("Authorization");
+                expect(code).toContain("Bearer tok_post");
+            });
+
+            it("no auth options -> no Authorization header in generated code", () => {
+                const code = generateCode(commentItemTemplate, commentFields, URL);
+                expect(code).not.toContain("Authorization");
+                expect(code).not.toContain("Bearer");
+            });
+
+            it("requiresAuth true but bearerToken absent -> uses YOUR_TOKEN_HERE placeholder", () => {
+                const code = generateCode(commentItemTemplate, commentFields, URL, {
+                    requiresAuth: true,
+                });
+                expect(code).toContain("Authorization");
+                expect(code).toContain("YOUR_TOKEN_HERE");
+                expect(code).not.toContain("null");
+            });
+        });
+
+        describe("generateHtmlCode with auth options", () => {
+            it("commentItemTemplate HTML includes auth fetch with token", () => {
+                const html = generateHtmlCode(commentItemTemplate, commentFields, URL, {
+                    requiresAuth: true,
+                    bearerToken: "tok_html",
+                });
+                expect(html).toContain("Authorization");
+                expect(html).toContain("Bearer tok_html");
+            });
+
+            it("dynamicGridTemplate HTML includes auth fetch with token", () => {
+                const fields = [
+                    { id: "1", fieldName: "id", dataType: "$faker.string.uuid" },
+                    { id: "2", fieldName: "name", dataType: "$faker.person.fullName" },
+                ];
+                const html = generateHtmlCode(dynamicGridTemplate, fields, URL, {
+                    requiresAuth: true,
+                    bearerToken: "tok_html_grid",
+                });
+                expect(html).toContain("Authorization");
+                expect(html).toContain("Bearer tok_html_grid");
+            });
+
+            it("HTML no auth -> plain fetch without Authorization header", () => {
+                const html = generateHtmlCode(commentItemTemplate, commentFields, URL);
+                expect(html).not.toContain("Authorization");
+                expect(html).not.toContain("Bearer");
+            });
         });
     });
 });

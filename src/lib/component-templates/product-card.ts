@@ -29,7 +29,7 @@ export const productCardTemplate: ComponentTemplate = {
         "$faker.number.float",
         "$faker.string.uuid",
     ],
-    code: (fields, endpointUrl) => {
+    code: (fields, endpointUrl, options) => {
         const idField =
             findFieldByDataType(fields, ["string.uuid", "string.nanoid", "number.int"]) ??
             findField(fields, ["id", "productid", "uuid"]) ??
@@ -42,12 +42,17 @@ export const productCardTemplate: ComponentTemplate = {
                 "food.dish",
                 "vehicle.vehicle",
             ]) ??
-            findField(fields, ["name", "productname", "title"]) ??
-            "name";
+            findField(fields, ["name", "productname", "title", "label"]) ??
+            fields[0]?.fieldName;
         const priceField =
-            findFieldByDataType(fields, ["commerce.price", "finance.amount"]) ??
-            findField(fields, ["price", "amount", "cost"]) ??
-            "price";
+            findFieldByDataType(fields, [
+                "commerce.price",
+                "finance.amount",
+                "number.float",
+                "number.int",
+            ]) ??
+            findField(fields, ["price", "amount", "cost", "value"]) ??
+            fields.find((f) => mapTsType(f.dataType) === "number")?.fieldName;
         const imageField =
             findFieldByDataType(fields, ["image.url", "image.datauri"]) ??
             findField(fields, ["image", "photo", "picture", "thumbnail", "cover"]);
@@ -79,14 +84,14 @@ export const productCardTemplate: ComponentTemplate = {
 
 ${buildInterface("Product", interfaceLines)}
 
-${buildFetchHook("ProductCard", endpointUrl, "Product")}
+${buildFetchHook("ProductCard", endpointUrl, "Product", options)}
 
 export function ProductCard() {
   const { data, loading, error } = useProductCardData();
 
   if (loading) return <div style={{ padding: "1rem", fontSize: "0.875rem", color: "#71717a" }}>Loading...</div>;
   if (error) return <div style={{ padding: "1rem", fontSize: "0.875rem", color: "#ef4444" }}>Error: {error}</div>;
-  if (!data) return null;
+  if (!data) return <></>;
 
   const products = Array.isArray(data) ? data : [data];
 
@@ -111,14 +116,12 @@ ${
             <div style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem" }}>
 ${categoryField ? `                {product.${categoryField} && <span style={{ fontSize: "10px", fontFamily: "monospace", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#71717a" }}>{product.${categoryField}}</span>}\n` : ""}${brandField ? `                {product.${brandField} && <span style={{ fontSize: "10px", fontFamily: "monospace", color: "#a1a1aa" }}>{product.${brandField}}</span>}\n` : ""}              </div>
-              <p style={{ margin: 0, fontWeight: 600, fontSize: "1rem", color: "#18181b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{product.${nameField}}</p>
-${descriptionField ? `              {product.${descriptionField} && <p style={{ margin: 0, fontSize: "0.75rem", color: "#71717a", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{product.${descriptionField}}</p>}\n` : ""}            </div>
+${nameField ? `              <p style={{ margin: 0, fontWeight: 600, fontSize: "1rem", color: "#18181b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{product.${nameField}}</p>\n` : ""}${descriptionField ? `              {product.${descriptionField} && <p style={{ margin: 0, fontSize: "0.75rem", color: "#71717a", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{product.${descriptionField}}</p>}\n` : ""}            </div>
           </div>
 
           <div style={{ padding: "0.5rem 1rem 1rem 1rem", display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid #f4f4f5" }}>
             <div>
-              <span style={{ fontSize: "1.125rem", fontWeight: 700, color: "#18181b" }}>\${product.${priceField}}</span>
-${ratingField ? `              {product.${ratingField} && <span style={{ marginLeft: "0.5rem", fontSize: "0.75rem", color: "#f59e0b" }}>Rating: {product.${ratingField}}</span>}\n` : ""}            </div>
+${priceField ? `              <span style={{ fontSize: "1.125rem", fontWeight: 700, color: "#18181b" }}>\${product.${priceField}}</span>\n` : ""}${ratingField ? `              {product.${ratingField} && <span style={{ marginLeft: "0.5rem", fontSize: "0.75rem", color: "#f59e0b" }}>Rating: {product.${ratingField}}</span>}\n` : ""}            </div>
 
 ${
     inStockField
@@ -136,7 +139,7 @@ ${
 }
 `;
     },
-    htmlCode: (fields, endpointUrl) => {
+    htmlCode: (fields, endpointUrl, options) => {
         const nameField =
             findFieldByDataType(fields, [
                 "commerce.productName",
@@ -144,12 +147,17 @@ ${
                 "food.dish",
                 "vehicle.vehicle",
             ]) ??
-            findField(fields, ["name", "productname", "title"]) ??
-            "name";
+            findField(fields, ["name", "productname", "title", "label"]) ??
+            fields[0]?.fieldName;
         const priceField =
-            findFieldByDataType(fields, ["commerce.price", "finance.amount"]) ??
-            findField(fields, ["price", "amount", "cost"]) ??
-            "price";
+            findFieldByDataType(fields, [
+                "commerce.price",
+                "finance.amount",
+                "number.float",
+                "number.int",
+            ]) ??
+            findField(fields, ["price", "amount", "cost", "value"]) ??
+            fields.find((f) => mapTsType(f.dataType) === "number")?.fieldName;
         const imageField =
             findFieldByDataType(fields, ["image.url", "image.datauri"]) ??
             findField(fields, ["image", "photo", "picture", "thumbnail", "cover"]);
@@ -225,7 +233,7 @@ ${buildHtmlStyles()}
   <p id="error"></p>
   <div id="root" class="grid"></div>
   <script type="module">
-${buildHtmlFetchScript(endpointUrl, renderFn)}
+${buildHtmlFetchScript(endpointUrl, renderFn, options)}
   </script>
 </body>
 </html>

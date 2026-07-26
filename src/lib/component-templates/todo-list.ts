@@ -23,7 +23,7 @@ export const todoListTemplate: ComponentTemplate = {
         "$faker.lorem.paragraph",
         "$faker.string.uuid",
     ],
-    code: (fields, endpointUrl) => {
+    code: (fields, endpointUrl, options) => {
         const idField =
             findFieldByDataType(fields, ["string.uuid", "string.nanoid", "number.int"]) ??
             findField(fields, ["id", "todoid", "uuid"]) ??
@@ -36,12 +36,12 @@ export const todoListTemplate: ComponentTemplate = {
                 "lorem.sentence",
                 "system.fileName",
             ]) ??
-            findField(fields, ["title", "task", "name", "summary"]) ??
-            "title";
+            findField(fields, ["title", "task", "name", "summary", "text", "description"]) ??
+            fields.find((f) => f.fieldName !== idField)?.fieldName ??
+            fields[0]?.fieldName;
         const completedField =
             findFieldByDataType(fields, ["datatype.boolean"]) ??
-            findField(fields, ["completed", "done", "isdone", "iscompleted"]) ??
-            "completed";
+            findField(fields, ["completed", "done", "isdone", "iscompleted", "status"]);
         const dueDateField =
             findFieldByDataType(fields, [
                 "date.future",
@@ -74,14 +74,14 @@ export const todoListTemplate: ComponentTemplate = {
 
 ${buildInterface("Todo", interfaceLines)}
 
-${buildFetchHook("TodoList", endpointUrl, "Todo")}
+${buildFetchHook("TodoList", endpointUrl, "Todo", options)}
 
 export function TodoList() {
   const { data, loading, error } = useTodoListData();
 
   if (loading) return <div style={{ padding: "1rem", fontSize: "0.875rem", color: "#71717a" }}>Loading...</div>;
   if (error) return <div style={{ padding: "1rem", fontSize: "0.875rem", color: "#ef4444" }}>Error: {error}</div>;
-  if (!data) return null;
+  if (!data) return <></>;
 
   const todos = Array.isArray(data) ? data : [data];
 
@@ -92,12 +92,12 @@ export function TodoList() {
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
             <input
               type="checkbox"
-              checked={Boolean(todo.${completedField})}
+              checked={${completedField ? `Boolean(todo.${completedField})` : "false"}}
               readOnly
               style={{ height: "1rem", width: "1rem", borderRadius: "4px", accentColor: "#6366f1", cursor: "pointer" }}
             />
-            <span style={{ flex: 1, fontWeight: 500, fontSize: "0.875rem", color: todo.${completedField} ? "#a1a1aa" : "#18181b", textDecoration: todo.${completedField} ? "line-through" : "none" }}>
-              {todo.${titleField}}
+            <span style={{ flex: 1, fontWeight: 500, fontSize: "0.875rem", color: ${completedField ? `todo.${completedField} ? "#a1a1aa" : "#18181b"` : '"#18181b"'}, textDecoration: ${completedField ? `todo.${completedField} ? "line-through" : "none"` : '"none"'} }}>
+              {${titleField ? `todo.${titleField}` : `"Task"`}}
             </span>
 ${priorityField ? `            {todo.${priorityField} && <span style={{ padding: "0.125rem 0.5rem", borderRadius: "4px", fontSize: "10px", fontFamily: "monospace", textTransform: "uppercase", fontWeight: 600, backgroundColor: "#fef3c7", color: "#92400e" }}>{todo.${priorityField}}</span>}\n` : ""}${categoryField ? `            {todo.${categoryField} && <span style={{ padding: "0.125rem 0.5rem", borderRadius: "4px", fontSize: "10px", fontFamily: "monospace", backgroundColor: "#f4f4f5", color: "#52525b" }}>{todo.${categoryField}}</span>}\n` : ""}          </div>
 
@@ -119,7 +119,12 @@ ${dueDateField ? `            {todo.${dueDateField} && <span>Due: {todo.${dueDat
 }
 `;
     },
-    htmlCode: (fields, endpointUrl) => {
+    htmlCode: (fields, endpointUrl, options) => {
+        const idField =
+            findFieldByDataType(fields, ["string.uuid", "string.nanoid", "number.int"]) ??
+            findField(fields, ["id", "todoid", "uuid"]) ??
+            fields[0]?.fieldName ??
+            "id";
         const titleField =
             findFieldByDataType(fields, [
                 "lorem.words",
@@ -127,12 +132,12 @@ ${dueDateField ? `            {todo.${dueDateField} && <span>Due: {todo.${dueDat
                 "lorem.sentence",
                 "system.fileName",
             ]) ??
-            findField(fields, ["title", "task", "name", "summary"]) ??
-            "title";
+            findField(fields, ["title", "task", "name", "summary", "text", "description"]) ??
+            fields.find((f) => f.fieldName !== idField)?.fieldName ??
+            fields[0]?.fieldName;
         const completedField =
             findFieldByDataType(fields, ["datatype.boolean"]) ??
-            findField(fields, ["completed", "done", "isdone", "iscompleted"]) ??
-            "completed";
+            findField(fields, ["completed", "done", "isdone", "iscompleted", "status"]);
         const dueDateField =
             findFieldByDataType(fields, [
                 "date.future",
@@ -197,7 +202,7 @@ ${buildHtmlStyles()}
   <p id="error"></p>
   <ul id="root" class="todo-list"></ul>
   <script type="module">
-${buildHtmlFetchScript(endpointUrl, renderFn)}
+${buildHtmlFetchScript(endpointUrl, renderFn, options)}
   </script>
 </body>
 </html>

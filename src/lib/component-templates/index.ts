@@ -47,7 +47,11 @@ export function matchTemplates(fields: SchemaField[], endpointPath: string = "")
 
         // Endpoint path keyword bonus
         let pathScoreBoost = 0;
-        const templateKeywords = [template.id, ...template.requiredFields];
+        const templateKeywords = [
+            template.id,
+            ...template.id.split("-"),
+            ...template.requiredFields,
+        ];
         if (normalizedPath) {
             for (const kw of templateKeywords) {
                 const normKw = normalize(kw);
@@ -117,20 +121,24 @@ export function getTemplateById(id: string): ComponentTemplate | undefined {
     return COMPONENT_TEMPLATES.find((t) => t.id === id);
 }
 
+import type { TemplateOptions } from "./types";
+
 export function generateCode(
     template: ComponentTemplate,
     fields: SchemaField[],
     endpointUrl: string,
+    options?: TemplateOptions,
 ): string {
-    return template.code(fields, endpointUrl);
+    return template.code(fields, endpointUrl, options);
 }
 
 export function generateHtmlCode(
     template: ComponentTemplate,
     fields: SchemaField[],
     endpointUrl: string,
+    options?: TemplateOptions,
 ): string {
-    return template.htmlCode ? template.htmlCode(fields, endpointUrl) : "";
+    return template.htmlCode ? template.htmlCode(fields, endpointUrl, options) : "";
 }
 
 export * from "./types";

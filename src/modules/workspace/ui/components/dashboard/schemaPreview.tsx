@@ -30,6 +30,61 @@ interface SchemaPreviewProps {
     bearerToken?: string | null;
 }
 
+function generateFetchSnippet(
+    tab: "curl" | "js" | "tsx" | "python" | "go" | "rust" | "php",
+    url: string,
+    method: HttpMethod,
+    requiresAuth: boolean,
+    token?: string | null,
+) {
+    const tokenVal = token || "YOUR_TOKEN_HERE";
+
+    switch (tab) {
+        case "curl": {
+            const parts = [`curl -X ${method} "${url}"`];
+            parts.push('-H "Accept: application/json"');
+            if (requiresAuth) {
+                parts.push(`-H "Authorization: Bearer ${tokenVal}"`);
+            }
+            return parts.join(" \\\n  ");
+        }
+        case "js": {
+            const authHeaderJs = requiresAuth
+                ? `,\n    headers: {\n      "Authorization": "Bearer ${tokenVal}"\n    }`
+                : "";
+            return `fetch("${url}", {\n  method: "${method}"${authHeaderJs}\n})\n  .then((res) => res.json())\n  .then((data) => console.log(data))\n  .catch((err) => console.error(err));`;
+        }
+        case "tsx": {
+            const authHeaderTs = requiresAuth
+                ? `,\n      headers: {\n        "Authorization": "Bearer ${tokenVal}"\n      }`
+                : "";
+            return `async function fetchData<T = unknown>(): Promise<T> {\n  const response = await fetch("${url}", {\n    method: "${method}"${authHeaderTs}\n  });\n\n  if (!response.ok) {\n    throw new Error(\`HTTP error! status: \${response.status}\`);\n  }\n\n  return response.json() as Promise<T>;\n}`;
+        }
+        case "python": {
+            const headersObj = requiresAuth
+                ? `,\n    headers={\n        "Authorization": "Bearer ${tokenVal}"\n    }`
+                : "";
+            return `import requests\n\nresponse = requests.${method.toLowerCase()}(\n    "${url}"${headersObj}\n)\n\nprint(response.json())`;
+        }
+        case "go": {
+            const authGo = requiresAuth
+                ? `\n\treq.Header.Add("Authorization", "Bearer ${tokenVal}")`
+                : "";
+            return `package main\n\nimport (\n\t"fmt"\n\t"io"\n\t"net/http"\n)\n\nfunc main() {\n\tclient := &http.Client{}\n\treq, err := http.NewRequest("${method}", "${url}", nil)${authGo}\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\n\tresp, err := client.Do(req)\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tdefer resp.Body.Close()\n\n\tbody, _ := io.ReadAll(resp.Body)\n\tfmt.Println(string(body))\n}`;
+        }
+        case "rust": {
+            const authCall = requiresAuth ? `\n        .bearer_auth("${tokenVal}")` : "";
+            return `use reqwest::Error;\n\n#[tokio::main]\nasync fn main() -> Result<(), Error> {\n    let client = reqwest::Client::new();\n    let response = client\n        .${method.toLowerCase()}("${url}")${authCall}\n        .header("Accept", "application/json")\n        .send()\n        .await?;\n\n    let body = response.text().await?;\n    println!("{}", body);\n    Ok(())\n}`;
+        }
+        case "php": {
+            const authPhp = requiresAuth
+                ? `\n  "header" => "Authorization: Bearer ${tokenVal}\\r\\n"`
+                : "";
+            return `<?php\n$opts = [\n  "http" => [\n    "method" => "${method}"${authPhp}\n  ]\n];\n$context = stream_context_create($opts);\n$result = file_get_contents("${url}", false, $context);\necho $result;\n?>`;
+        }
+    }
+}
+
 export function SchemaPreview({ endpoint, fetchUrl, bearerToken }: SchemaPreviewProps) {
     const [liveData, setLiveData] = useState<unknown>(null);
     const [error, setError] = useState<string | null>(null);
@@ -60,6 +115,9 @@ export function SchemaPreview({ endpoint, fetchUrl, bearerToken }: SchemaPreview
     const [selectedTemplateId] = useState<string | null>(null);
 
     const [activeTab, setActiveTab] = useState<"react" | "html">("react");
+    const [fetchTab, setFetchTab] = useState<
+        "curl" | "js" | "tsx" | "python" | "go" | "rust" | "php"
+    >("curl");
 
     // Keep active template selection in sync when matches change
     const activeMatch =
@@ -326,6 +384,7 @@ export function SchemaPreview({ endpoint, fetchUrl, bearerToken }: SchemaPreview
                                         activeMatch.template,
                                         schemaFields,
                                         fetchUrl,
+                                        { requiresAuth, bearerToken },
                                     )}
                                     lang="tsx"
                                     maxHeight="350px"
@@ -336,6 +395,7 @@ export function SchemaPreview({ endpoint, fetchUrl, bearerToken }: SchemaPreview
                                         activeMatch.template,
                                         schemaFields,
                                         fetchUrl,
+                                        { requiresAuth, bearerToken },
                                     )}
                                     lang="html"
                                     maxHeight="350px"
@@ -343,6 +403,74 @@ export function SchemaPreview({ endpoint, fetchUrl, bearerToken }: SchemaPreview
                             )}
                         </div>
                     )}
+
+                    {/* API Fetch Code Snippets Block */}
+                    <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 space-y-3">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-sm font-bold font-mono text-muted-foreground flex items-center gap-2">
+                                <Code2 className="w-4 h-4" />
+                                API Fetch Snippets
+                            </h3>
+
+                            <div className="flex items-center bg-zinc-200 dark:bg-zinc-800 p-0.5 rounded-lg text-xs font-mono overflow-x-auto">
+                                {(
+                                    [
+                                        { id: "curl", label: "cURL" },
+                                        { id: "js", label: "JavaScript" },
+                                        { id: "tsx", label: "TypeScript" },
+                                        { id: "python", label: "Python" },
+                                        { id: "go", label: "Go" },
+                                        { id: "rust", label: "Rust" },
+                                        { id: "php", label: "PHP" },
+                                    ] as const
+                                ).map((tab) => (
+                                    <button
+                                        key={tab.id}
+                                        type="button"
+                                        onClick={() => setFetchTab(tab.id)}
+                                        className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
+                                            fetchTab === tab.id
+                                                ? "bg-white dark:bg-zinc-900 text-foreground shadow-xs"
+                                                : "text-muted-foreground hover:text-foreground"
+                                        }`}
+                                    >
+                                        {tab.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <p className="text-xs text-muted-foreground font-mono">
+                            Ready-to-use fetch code snippets tailored for this endpoint and
+                            authentication rules.
+                        </p>
+
+                        <CodeBlock
+                            code={generateFetchSnippet(
+                                fetchTab,
+                                fetchUrl,
+                                endpoint.method,
+                                requiresAuth,
+                                bearerToken,
+                            )}
+                            lang={
+                                fetchTab === "curl"
+                                    ? "bash"
+                                    : fetchTab === "js"
+                                      ? "javascript"
+                                      : fetchTab === "tsx"
+                                        ? "typescript"
+                                        : fetchTab === "python"
+                                          ? "python"
+                                          : fetchTab === "go"
+                                            ? "go"
+                                            : fetchTab === "rust"
+                                              ? "rust"
+                                              : "php"
+                            }
+                            maxHeight="350px"
+                        />
+                    </div>
                 </CardContent>
             </Card>
         </div>

@@ -28,7 +28,7 @@ export const userCardTemplate: ComponentTemplate = {
         "$faker.image.avatar",
         "$faker.string.uuid",
     ],
-    code: (fields, endpointUrl) => {
+    code: (fields, endpointUrl, options) => {
         const idField =
             findFieldByDataType(fields, ["string.uuid", "string.nanoid", "number.int"]) ??
             findField(fields, ["id", "userid", "uuid"]) ??
@@ -40,8 +40,8 @@ export const userCardTemplate: ComponentTemplate = {
                 "person.firstName",
                 "person.lastName",
             ]) ??
-            findField(fields, ["fullname", "name", "displayname"]) ??
-            "name";
+            findField(fields, ["fullname", "name", "displayname", "author", "username", "user"]) ??
+            fields[0]?.fieldName;
         const usernameField =
             findFieldByDataType(fields, ["internet.username"]) ??
             findField(fields, ["username", "handle"]);
@@ -69,14 +69,14 @@ export const userCardTemplate: ComponentTemplate = {
 
 ${buildInterface("User", interfaceLines)}
 
-${buildFetchHook("UserCard", endpointUrl, "User")}
+${buildFetchHook("UserCard", endpointUrl, "User", options)}
 
 export function UserCard() {
   const { data, loading, error } = useUserCardData();
 
   if (loading) return <div style={{ padding: "1rem", fontSize: "0.875rem", color: "#71717a" }}>Loading...</div>;
   if (error) return <div style={{ padding: "1rem", fontSize: "0.875rem", color: "#ef4444" }}>Error: {error}</div>;
-  if (!data) return null;
+  if (!data) return <></>;
 
   const users = Array.isArray(data) ? data : [data];
 
@@ -112,15 +112,15 @@ ${emailField ? `            {user.${emailField} && <p style={{ margin: 0, overfl
 }
 `;
     },
-    htmlCode: (fields, endpointUrl) => {
+    htmlCode: (fields, endpointUrl, options) => {
         const fullNameField =
             findFieldByDataType(fields, [
                 "person.fullName",
                 "person.firstName",
                 "person.lastName",
             ]) ??
-            findField(fields, ["fullname", "name", "displayname"]) ??
-            "name";
+            findField(fields, ["fullname", "name", "displayname", "author", "username", "user"]) ??
+            fields[0]?.fieldName;
         const usernameField =
             findFieldByDataType(fields, ["internet.username"]) ??
             findField(fields, ["username", "handle"]);
@@ -191,7 +191,7 @@ ${buildHtmlStyles()}
   <p id="error"></p>
   <div id="root" class="grid"></div>
   <script type="module">
-${buildHtmlFetchScript(endpointUrl, renderFn)}
+${buildHtmlFetchScript(endpointUrl, renderFn, options)}
   </script>
 </body>
 </html>

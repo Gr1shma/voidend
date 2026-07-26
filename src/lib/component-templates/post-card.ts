@@ -29,7 +29,7 @@ export const postCardTemplate: ComponentTemplate = {
         "$faker.date.recent",
         "$faker.string.uuid",
     ],
-    code: (fields, endpointUrl) => {
+    code: (fields, endpointUrl, options) => {
         const idField =
             findFieldByDataType(fields, ["string.uuid", "string.nanoid", "number.int"]) ??
             findField(fields, ["id", "postid", "uuid"]) ??
@@ -37,12 +37,23 @@ export const postCardTemplate: ComponentTemplate = {
             "id";
         const titleField =
             findFieldByDataType(fields, ["book.title", "lorem.sentence", "company.catchPhrase"]) ??
-            findField(fields, ["title"]) ??
-            "title";
+            findField(fields, ["title", "headline", "subject", "name"]);
         const contentField =
-            findFieldByDataType(fields, ["lorem.paragraph", "lorem.paragraphs", "person.bio"]) ??
-            findField(fields, ["content", "body", "paragraph"]) ??
-            "content";
+            findFieldByDataType(fields, [
+                "lorem.paragraph",
+                "lorem.paragraphs",
+                "person.bio",
+                "lorem.sentence",
+            ]) ??
+            findField(fields, [
+                "content",
+                "body",
+                "paragraph",
+                "comment",
+                "text",
+                "message",
+                "description",
+            ]);
         const authorField =
             findFieldByDataType(fields, [
                 "person.fullName",
@@ -51,8 +62,8 @@ export const postCardTemplate: ComponentTemplate = {
                 "book.author",
             ]) ?? findField(fields, ["author", "fullname", "username"]);
         const coverImageField =
-            findFieldByDataType(fields, ["image.url", "image.datauri"]) ??
-            findField(fields, ["coverimage", "image", "thumbnail"]);
+            findFieldByDataType(fields, ["image.url", "image.datauri", "image.avatar"]) ??
+            findField(fields, ["coverimage", "image", "thumbnail", "avatar", "photo"]);
         const publishedAtField =
             findFieldByDataType(fields, [
                 "date.anytime",
@@ -70,14 +81,14 @@ export const postCardTemplate: ComponentTemplate = {
 
 ${buildInterface("Post", interfaceLines)}
 
-${buildFetchHook("PostCard", endpointUrl, "Post")}
+${buildFetchHook("PostCard", endpointUrl, "Post", options)}
 
 export function PostCard() {
   const { data, loading, error } = usePostCardData();
 
   if (loading) return <div style={{ padding: "1rem", fontSize: "0.875rem", color: "#71717a" }}>Loading...</div>;
   if (error) return <div style={{ padding: "1rem", fontSize: "0.875rem", color: "#ef4444" }}>Error: {error}</div>;
-  if (!data) return null;
+  if (!data) return <></>;
 
   const posts = Array.isArray(data) ? data : [data];
 
@@ -85,10 +96,8 @@ export function PostCard() {
     <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
       {posts.map((post) => (
         <article key={post.${idField}} style={{ overflow: "hidden", borderRadius: "12px", border: "1px solid #e4e4e7", backgroundColor: "#ffffff", boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)" }}>
-${coverImageField ? `          <img src={post.${coverImageField}} alt={post.${titleField}} style={{ height: "10rem", width: "100%", objectFit: "cover" }} />\n` : ""}          <div style={{ padding: "1rem" }}>
-            <h3 style={{ margin: 0, fontWeight: 600, fontSize: "1rem", color: "#18181b" }}>{post.${titleField}}</h3>
-            <p style={{ marginTop: "0.25rem", marginBottom: 0, fontSize: "0.875rem", color: "#71717a", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{post.${contentField}}</p>
-            <div style={{ marginTop: "0.75rem", display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.75rem", color: "#a1a1aa" }}>
+${coverImageField ? `          <img src={post.${coverImageField}} alt={${titleField ? `post.${titleField}` : `"Post image"`}} style={{ height: "10rem", width: "100%", objectFit: "cover" }} />\n` : ""}          <div style={{ padding: "1rem" }}>
+${titleField ? `            <h3 style={{ margin: 0, fontWeight: 600, fontSize: "1rem", color: "#18181b" }}>{post.${titleField}}</h3>\n` : ""}${contentField ? `            <p style={{ marginTop: ${titleField ? `"0.25rem"` : "0"}, marginBottom: 0, fontSize: "0.875rem", color: "#71717a", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{post.${contentField}}</p>\n` : ""}            <div style={{ marginTop: "0.75rem", display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.75rem", color: "#a1a1aa" }}>
 ${authorField ? `              <span>{post.${authorField}}</span>\n` : ""}${publishedAtField ? `              <span>{post.${publishedAtField}}</span>\n` : ""}            </div>
           </div>
         </article>
@@ -98,15 +107,26 @@ ${authorField ? `              <span>{post.${authorField}}</span>\n` : ""}${publ
 }
 `;
     },
-    htmlCode: (fields, endpointUrl) => {
+    htmlCode: (fields, endpointUrl, options) => {
         const titleField =
             findFieldByDataType(fields, ["book.title", "lorem.sentence", "company.catchPhrase"]) ??
-            findField(fields, ["title"]) ??
-            "title";
+            findField(fields, ["title", "headline", "subject", "name"]);
         const contentField =
-            findFieldByDataType(fields, ["lorem.paragraph", "lorem.paragraphs", "person.bio"]) ??
-            findField(fields, ["content", "body", "paragraph"]) ??
-            "content";
+            findFieldByDataType(fields, [
+                "lorem.paragraph",
+                "lorem.paragraphs",
+                "person.bio",
+                "lorem.sentence",
+            ]) ??
+            findField(fields, [
+                "content",
+                "body",
+                "paragraph",
+                "comment",
+                "text",
+                "message",
+                "description",
+            ]);
         const authorField =
             findFieldByDataType(fields, [
                 "person.fullName",
@@ -115,8 +135,8 @@ ${authorField ? `              <span>{post.${authorField}}</span>\n` : ""}${publ
                 "book.author",
             ]) ?? findField(fields, ["author", "fullname", "username"]);
         const coverImageField =
-            findFieldByDataType(fields, ["image.url", "image.datauri"]) ??
-            findField(fields, ["coverimage", "image", "thumbnail"]);
+            findFieldByDataType(fields, ["image.url", "image.datauri", "image.avatar"]) ??
+            findField(fields, ["coverimage", "image", "thumbnail", "avatar", "photo"]);
         const publishedAtField =
             findFieldByDataType(fields, [
                 "date.anytime",
@@ -128,6 +148,12 @@ ${authorField ? `              <span>{post.${authorField}}</span>\n` : ""}${publ
         const coverHtml = coverImageField
             ? `\${${safeGet(coverImageField)} ? \`<img class="cover" src="\${${safeGet(coverImageField)}}" alt="cover">\` : ''}`
             : "";
+        const titleHtml = titleField
+            ? `\${${safeGet(titleField)} ? \`<div class="article-title">\${${safeGet(titleField)}}</div>\` : ''}`
+            : "";
+        const contentHtml = contentField
+            ? `\${${safeGet(contentField)} ? \`<div class="article-excerpt">\${${safeGet(contentField)}}</div>\` : ''}`
+            : "";
         const authorHtml = authorField
             ? `\${${safeGet(authorField)} ? \`<span>\${${safeGet(authorField)}}</span>\` : ''}`
             : "";
@@ -138,8 +164,8 @@ ${authorField ? `              <span>{post.${authorField}}</span>\n` : ""}${publ
         const renderFn = `item => \`<article class="article">
   ${coverHtml}
   <div class="article-body">
-    <div class="article-title">\${${safeGet(titleField)}}</div>
-    <div class="article-excerpt">\${${safeGet(contentField)}}</div>
+    ${titleHtml}
+    ${contentHtml}
     <div class="article-footer">${authorHtml}${dateHtml}</div>
   </div>
 </article>\``;
@@ -159,7 +185,7 @@ ${buildHtmlStyles()}
   <p id="error"></p>
   <div id="root" class="grid"></div>
   <script type="module">
-${buildHtmlFetchScript(endpointUrl, renderFn)}
+${buildHtmlFetchScript(endpointUrl, renderFn, options)}
   </script>
 </body>
 </html>

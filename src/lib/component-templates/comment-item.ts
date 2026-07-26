@@ -26,7 +26,7 @@ export const commentItemTemplate: ComponentTemplate = {
         "$faker.date.past",
         "$faker.string.uuid",
     ],
-    code: (fields, endpointUrl) => {
+    code: (fields, endpointUrl, options) => {
         const idField =
             findFieldByDataType(fields, ["string.uuid", "string.nanoid", "number.int"]) ??
             findField(fields, ["id", "commentid", "uuid"]) ??
@@ -38,18 +38,16 @@ export const commentItemTemplate: ComponentTemplate = {
                 "person.firstName",
                 "internet.username",
             ]) ??
-            findField(fields, ["author", "fullname", "username", "name"]) ??
-            "author";
+            findField(fields, ["author", "fullname", "username", "name", "user"]) ??
+            fields.find((f) => f.fieldName !== idField)?.fieldName ??
+            fields[0]?.fieldName;
         const commentField =
             findFieldByDataType(fields, ["lorem.paragraph", "lorem.sentence", "lorem.sentences"]) ??
-            findField(fields, ["comment", "message", "content", "text"]) ??
-            "comment";
+            findField(fields, ["comment", "message", "content", "text", "body", "description"]) ??
+            fields.find((f) => f.fieldName !== idField && f.fieldName !== authorField)?.fieldName;
         const avatarField =
             findFieldByDataType(fields, ["image.avatar", "image.url", "image.datauri"]) ??
             findField(fields, ["avatar", "image", "photo"]);
-        const createdAtField =
-            findFieldByDataType(fields, ["date.recent", "date.past", "date.anytime"]) ??
-            findField(fields, ["createdat", "date", "timestamp"]);
 
         const interfaceLines = fields.map((f) => {
             const name = f.fieldName.includes(".") ? `"${f.fieldName}"?` : f.fieldName;
@@ -60,14 +58,14 @@ export const commentItemTemplate: ComponentTemplate = {
 
 ${buildInterface("Comment", interfaceLines)}
 
-${buildFetchHook("CommentItem", endpointUrl, "Comment")}
+${buildFetchHook("CommentItem", endpointUrl, "Comment", options)}
 
 export function CommentList() {
   const { data, loading, error } = useCommentItemData();
 
   if (loading) return <div style={{ padding: "1rem", fontSize: "0.875rem", color: "#71717a" }}>Loading...</div>;
   if (error) return <div style={{ padding: "1rem", fontSize: "0.875rem", color: "#ef4444" }}>Error: {error}</div>;
-  if (!data) return null;
+  if (!data) return <></>;
 
   const comments = Array.isArray(data) ? data : [data];
 
@@ -78,9 +76,8 @@ export function CommentList() {
 ${avatarField ? `          <img src={comment.${avatarField}} alt={comment.${authorField}} style={{ height: "2rem", width: "2rem", borderRadius: "9999px", objectFit: "cover", flexShrink: 0 }} />\n` : ""}          <div style={{ minWidth: 0, flex: 1, borderRadius: "12px", border: "1px solid #e4e4e7", padding: "0.75rem", backgroundColor: "#ffffff" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#18181b" }}>{comment.${authorField}}</span>
-${createdAtField ? `              <span style={{ fontSize: "0.75rem", color: "#a1a1aa" }}>{comment.${createdAtField}}</span>\n` : ""}            </div>
-            <p style={{ marginTop: "0.25rem", marginBottom: 0, fontSize: "0.875rem", color: "#52525b", lineHeight: 1.5 }}>{comment.${commentField}}</p>
-          </div>
+            </div>
+${commentField ? `            <p style={{ marginTop: "0.25rem", marginBottom: 0, fontSize: "0.875rem", color: "#52525b", lineHeight: 1.5 }}>{comment.${commentField}}</p>\n` : ""}          </div>
         </div>
       ))}
     </div>
@@ -88,19 +85,25 @@ ${createdAtField ? `              <span style={{ fontSize: "0.75rem", color: "#a
 }
 `;
     },
-    htmlCode: (fields, endpointUrl) => {
+    htmlCode: (fields, endpointUrl, options) => {
+        const idField =
+            findFieldByDataType(fields, ["string.uuid", "string.nanoid", "number.int"]) ??
+            findField(fields, ["id", "commentid", "uuid"]) ??
+            fields[0]?.fieldName ??
+            "id";
         const authorField =
             findFieldByDataType(fields, [
                 "person.fullName",
                 "person.firstName",
                 "internet.username",
             ]) ??
-            findField(fields, ["author", "fullname", "username", "name"]) ??
-            "author";
+            findField(fields, ["author", "fullname", "username", "name", "user"]) ??
+            fields.find((f) => f.fieldName !== idField)?.fieldName ??
+            fields[0]?.fieldName;
         const commentField =
             findFieldByDataType(fields, ["lorem.paragraph", "lorem.sentence", "lorem.sentences"]) ??
-            findField(fields, ["comment", "message", "content", "text"]) ??
-            "comment";
+            findField(fields, ["comment", "message", "content", "text", "body", "description"]) ??
+            fields.find((f) => f.fieldName !== idField && f.fieldName !== authorField)?.fieldName;
         const avatarField =
             findFieldByDataType(fields, ["image.avatar", "image.url", "image.datauri"]) ??
             findField(fields, ["avatar", "image", "photo"]);
@@ -141,7 +144,7 @@ ${buildHtmlStyles()}
   <p id="error"></p>
   <div id="root" class="comment-list"></div>
   <script type="module">
-${buildHtmlFetchScript(endpointUrl, renderFn)}
+${buildHtmlFetchScript(endpointUrl, renderFn, options)}
   </script>
 </body>
 </html>

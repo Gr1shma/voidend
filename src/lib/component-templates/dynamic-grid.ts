@@ -45,7 +45,7 @@ export const dynamicGridTemplate: ComponentTemplate = {
     description: "Adaptive UI card generated directly from schema fields and Faker types.",
     requiredFields: [],
     optionalFields: [],
-    code: (fields, endpointUrl) => {
+    code: (fields, endpointUrl, options) => {
         const validFields = fields.filter((f) => f.fieldName.trim().length > 0);
 
         const idField =
@@ -165,14 +165,14 @@ export const dynamicGridTemplate: ComponentTemplate = {
 
 ${buildInterface("DataItem", interfaceLines)}
 
-${buildFetchHook("DataItem", endpointUrl, "DataItem")}
+${buildFetchHook("DataItem", endpointUrl, "DataItem", options)}
 
 export function DataCardList() {
   const { data, loading, error } = useDataItemData();
 
   if (loading) return <div style={{ padding: "1rem", fontSize: "0.875rem", color: "#71717a", fontFamily: "monospace" }}>Loading...</div>;
   if (error) return <div style={{ padding: "1rem", fontSize: "0.875rem", color: "#ef4444", fontFamily: "monospace" }}>Error: {error}</div>;
-  if (!data) return null;
+  if (!data) return <></>;
 
   const items = Array.isArray(data) ? data : [data];
 
@@ -235,7 +235,7 @@ ${detailFields
 }
 `;
     },
-    htmlCode: (fields, endpointUrl) => {
+    htmlCode: (fields, endpointUrl, options) => {
         const validFields = fields.filter((f) => f.fieldName.trim().length > 0);
 
         const idField =
@@ -367,7 +367,7 @@ ${buildHtmlStyles()}
   <p id="error"></p>
   <div id="root" class="grid"></div>
   <script type="module">
-${buildHtmlFetchScript(endpointUrl, renderFn)}
+${buildHtmlFetchScript(endpointUrl, renderFn, options)}
   </script>
 </body>
 </html>

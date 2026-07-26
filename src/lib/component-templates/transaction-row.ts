@@ -28,20 +28,31 @@ export const transactionRowTemplate: ComponentTemplate = {
         "$faker.commerce.department",
         "$faker.string.uuid",
     ],
-    code: (fields, endpointUrl) => {
+    code: (fields, endpointUrl, options) => {
         const idField =
             findFieldByDataType(fields, ["string.uuid", "string.nanoid", "number.int"]) ??
             findField(fields, ["id", "transactionid", "uuid"]) ??
             fields[0]?.fieldName ??
             "id";
         const amountField =
-            findFieldByDataType(fields, ["finance.amount", "commerce.price"]) ??
+            findFieldByDataType(fields, [
+                "finance.amount",
+                "commerce.price",
+                "number.float",
+                "number.int",
+            ]) ??
             findField(fields, ["amount", "price", "value", "cost"]) ??
-            "amount";
+            fields.find((f) => mapTsType(f.dataType) === "number")?.fieldName;
         const dateField =
-            findFieldByDataType(fields, ["date.anytime", "date.past", "date.recent"]) ??
+            findFieldByDataType(fields, [
+                "date.anytime",
+                "date.past",
+                "date.recent",
+                "date.future",
+            ]) ??
             findField(fields, ["date", "createdat", "timestamp", "time"]) ??
-            "date";
+            fields.find((f) => f.fieldName !== idField && mapTsType(f.dataType) === "string")
+                ?.fieldName;
         const currencyField =
             findFieldByDataType(fields, ["finance.currencyCode", "finance.currencySymbol"]) ??
             findField(fields, ["currency", "currencycode", "symbol"]);
@@ -67,14 +78,14 @@ export const transactionRowTemplate: ComponentTemplate = {
 
 ${buildInterface("Transaction", interfaceLines)}
 
-${buildFetchHook("TransactionRow", endpointUrl, "Transaction")}
+${buildFetchHook("TransactionRow", endpointUrl, "Transaction", options)}
 
 export function TransactionTable() {
   const { data, loading, error } = useTransactionRowData();
 
   if (loading) return <div style={{ padding: "1rem", fontSize: "0.875rem", color: "#71717a", fontFamily: "monospace" }}>Loading...</div>;
   if (error) return <div style={{ padding: "1rem", fontSize: "0.875rem", color: "#ef4444", fontFamily: "monospace" }}>Error: {error}</div>;
-  if (!data) return null;
+  if (!data) return <></>;
 
   const transactions = Array.isArray(data) ? data : [data];
 
@@ -83,14 +94,14 @@ export function TransactionTable() {
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>
         <thead>
           <tr style={{ borderBottom: "1px solid #e4e4e7", backgroundColor: "#f4f4f5", textAlign: "left", fontSize: "0.75rem", fontFamily: "monospace", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#71717a" }}>
-            <th style={{ padding: "0.75rem 1rem" }}>Date</th>
+            <th style={{ padding: "0.75rem 1rem" }}>${dateField ? "Date" : "ID"}</th>
 ${merchantField ? `            <th style={{ padding: "0.75rem 1rem" }}>Merchant / Payee</th>\n` : ""}${descriptionField ? `            <th style={{ padding: "0.75rem 1rem" }}>Description</th>\n` : ""}${categoryField ? `            <th style={{ padding: "0.75rem 1rem" }}>Category</th>\n` : ""}${statusField ? `            <th style={{ padding: "0.75rem 1rem" }}>Status</th>\n` : ""}            <th style={{ padding: "0.75rem 1rem", textAlign: "right" }}>Amount</th>
           </tr>
         </thead>
         <tbody style={{ fontFamily: "monospace" }}>
           {transactions.map((tx, idx) => (
             <tr key={tx.${idField}} style={{ borderBottom: idx === transactions.length - 1 ? "none" : "1px solid #f4f4f5" }}>
-              <td style={{ padding: "0.75rem 1rem", fontSize: "0.75rem", color: "#71717a" }}>{tx.${dateField}}</td>
+              <td style={{ padding: "0.75rem 1rem", fontSize: "0.75rem", color: "#71717a" }}>{${dateField ? `tx.${dateField}` : `tx.${idField}`}}</td>
 ${merchantField ? `              <td style={{ padding: "0.75rem 1rem", fontFamily: "sans-serif", fontWeight: 500, color: "#18181b" }}>{tx.${merchantField}}</td>\n` : ""}${descriptionField ? `              <td style={{ padding: "0.75rem 1rem", fontSize: "0.75rem", color: "#52525b" }}>{tx.${descriptionField}}</td>\n` : ""}${categoryField ? `              <td style={{ padding: "0.75rem 1rem", fontSize: "0.75rem" }}><span style={{ padding: "0.125rem 0.5rem", borderRadius: "4px", backgroundColor: "#f4f4f5", color: "#52525b" }}>{tx.${categoryField}}</span></td>\n` : ""}${
             statusField
                 ? `              <td style={{ padding: "0.75rem 1rem", fontSize: "0.75rem" }}>
@@ -102,7 +113,7 @@ ${merchantField ? `              <td style={{ padding: "0.75rem 1rem", fontFamil
               </td>\n`
                 : ""
         }              <td style={{ padding: "0.75rem 1rem", textAlign: "right", fontWeight: 700, color: "#18181b" }}>
-                {tx.${amountField}}${currencyField ? ` {tx.${currencyField}}` : ""}
+                {${amountField ? `tx.${amountField}` : `"-"`}}${currencyField ? ` {tx.${currencyField}}` : ""}
               </td>
             </tr>
           ))}
@@ -113,15 +124,31 @@ ${merchantField ? `              <td style={{ padding: "0.75rem 1rem", fontFamil
 }
 `;
     },
-    htmlCode: (fields, endpointUrl) => {
+    htmlCode: (fields, endpointUrl, options) => {
+        const idField =
+            findFieldByDataType(fields, ["string.uuid", "string.nanoid", "number.int"]) ??
+            findField(fields, ["id", "transactionid", "uuid"]) ??
+            fields[0]?.fieldName ??
+            "id";
         const amountField =
-            findFieldByDataType(fields, ["finance.amount", "commerce.price"]) ??
+            findFieldByDataType(fields, [
+                "finance.amount",
+                "commerce.price",
+                "number.float",
+                "number.int",
+            ]) ??
             findField(fields, ["amount", "price", "value", "cost"]) ??
-            "amount";
+            fields.find((f) => mapTsType(f.dataType) === "number")?.fieldName;
         const dateField =
-            findFieldByDataType(fields, ["date.anytime", "date.past", "date.recent"]) ??
+            findFieldByDataType(fields, [
+                "date.anytime",
+                "date.past",
+                "date.recent",
+                "date.future",
+            ]) ??
             findField(fields, ["date", "createdat", "timestamp", "time"]) ??
-            "date";
+            fields.find((f) => f.fieldName !== idField && mapTsType(f.dataType) === "string")
+                ?.fieldName;
         const currencyField =
             findFieldByDataType(fields, ["finance.currencyCode", "finance.currencySymbol"]) ??
             findField(fields, ["currency", "currencycode", "symbol"]);
@@ -189,7 +216,7 @@ ${buildHtmlStyles()}
     </table>
   </div>
   <script type="module">
-${buildHtmlFetchScript(endpointUrl, renderFn)}
+${buildHtmlFetchScript(endpointUrl, renderFn, options)}
   </script>
 </body>
 </html>

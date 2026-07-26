@@ -1,4 +1,5 @@
 import type { SchemaField } from "~/lib/faker-options";
+import type { TemplateOptions } from "./types";
 
 function normalize(s: string): string {
     return s.toLowerCase().replace(/[_\s-]/g, "");
@@ -72,14 +73,20 @@ export function buildFetchHook(
     hookName: string,
     endpointUrl: string,
     itemTypeName: string,
+    options?: TemplateOptions,
 ): string {
+    const tokenVal = options?.bearerToken || "YOUR_TOKEN_HERE";
+    const fetchArgs = options?.requiresAuth
+        ? `"${endpointUrl}", {\n    headers: {\n      "Authorization": "Bearer ${tokenVal}"\n    }\n  }`
+        : `"${endpointUrl}"`;
+
     return `function use${hookName}Data() {
-  const [data, setData] = useState<${itemTypeName}[] | ${itemTypeName} | null>(null);
+  const [data, setData] = useState<${itemTypeName}[] | ${itemTypeName} | undefined>(undefined);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    fetch("${endpointUrl}")
+    fetch(${fetchArgs})
       .then((res) => {
         if (!res.ok) throw new Error(\`Request failed: \${res.status}\`);
         return res.json();
@@ -104,13 +111,22 @@ ${fieldLines.map((l) => `  ${l}`).join("\n")}
  * `renderFn` is a JS expression (string) that maps a single item to an
  * HTML string — the caller provides the item-level template string.
  */
-export function buildHtmlFetchScript(endpointUrl: string, renderFn: string): string {
+export function buildHtmlFetchScript(
+    endpointUrl: string,
+    renderFn: string,
+    options?: TemplateOptions,
+): string {
+    const tokenVal = options?.bearerToken || "YOUR_TOKEN_HERE";
+    const fetchArgs = options?.requiresAuth
+        ? `"${endpointUrl}", {\n        headers: {\n          "Authorization": "Bearer ${tokenVal}"\n        }\n      }`
+        : `"${endpointUrl}"`;
+
     return `  async function loadData() {
     const root = document.getElementById('root');
     const err  = document.getElementById('error');
     root.innerHTML = '<p class="loading">Loading…</p>';
     try {
-      const res = await fetch("${endpointUrl}");
+      const res = await fetch(${fetchArgs});
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const json = await res.json();
       const items = Array.isArray(json) ? json : [json];
