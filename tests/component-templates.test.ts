@@ -745,4 +745,200 @@ describe("Component Templates Library", () => {
             });
         });
     });
+
+    describe("HTTP Method Support (TemplateOptions.method)", () => {
+        const methodFields = [
+            { id: "1", fieldName: "id", dataType: "$faker.string.uuid" },
+            { id: "2", fieldName: "name", dataType: "$faker.person.fullName" },
+        ];
+        const URL = "http://localhost:3000/api/v1/items";
+
+        describe("buildFetchHook", () => {
+            it("generates plain fetch with no method when options are omitted", () => {
+                const code = buildFetchHook("Test", URL, "Item");
+                expect(code).toContain(`fetch("${URL}")`);
+                expect(code).not.toContain("method:");
+            });
+
+            it("generates plain fetch when method is GET", () => {
+                const code = buildFetchHook("Test", URL, "Item", { method: "GET" });
+                expect(code).toContain(`fetch("${URL}")`);
+                expect(code).not.toContain("method:");
+            });
+
+            it("includes method: POST in fetch options", () => {
+                const code = buildFetchHook("Test", URL, "Item", { method: "POST" });
+                expect(code).toContain('method: "POST"');
+                expect(code).toContain(`fetch("${URL}"`);
+            });
+
+            it("includes method: PATCH in fetch options", () => {
+                const code = buildFetchHook("Test", URL, "Item", { method: "PATCH" });
+                expect(code).toContain('method: "PATCH"');
+            });
+
+            it("includes method: PUT in fetch options", () => {
+                const code = buildFetchHook("Test", URL, "Item", { method: "PUT" });
+                expect(code).toContain('method: "PUT"');
+            });
+
+            it("includes method: DELETE in fetch options", () => {
+                const code = buildFetchHook("Test", URL, "Item", { method: "DELETE" });
+                expect(code).toContain('method: "DELETE"');
+            });
+
+            it("includes both method and Authorization header when combined", () => {
+                const code = buildFetchHook("Test", URL, "Item", {
+                    method: "POST",
+                    requiresAuth: true,
+                    bearerToken: "tok_123",
+                });
+                expect(code).toContain('method: "POST"');
+                expect(code).toContain("Authorization");
+                expect(code).toContain("Bearer tok_123");
+            });
+        });
+
+        describe("generateCode with method option", () => {
+            it("dynamicGridTemplate includes method: POST in generated React code", () => {
+                const code = generateCode(dynamicGridTemplate, methodFields, URL, {
+                    method: "POST",
+                });
+                expect(code).toContain('method: "POST"');
+                expect(code).toContain(`fetch("${URL}"`);
+            });
+
+            it("userCardTemplate includes method: DELETE in generated React code", () => {
+                const code = generateCode(userCardTemplate, methodFields, URL, {
+                    method: "DELETE",
+                });
+                expect(code).toContain('method: "DELETE"');
+            });
+
+            it("postCardTemplate includes method: PUT in generated React code", () => {
+                const code = generateCode(postCardTemplate, methodFields, URL, { method: "PUT" });
+                expect(code).toContain('method: "PUT"');
+            });
+
+            it("productCardTemplate includes method: PATCH in generated React code", () => {
+                const code = generateCode(productCardTemplate, methodFields, URL, {
+                    method: "PATCH",
+                });
+                expect(code).toContain('method: "PATCH"');
+            });
+
+            it("todoListTemplate includes method: POST in generated React code", () => {
+                const code = generateCode(todoListTemplate, methodFields, URL, { method: "POST" });
+                expect(code).toContain('method: "POST"');
+            });
+
+            it("transactionRowTemplate includes method: POST in generated React code", () => {
+                const code = generateCode(transactionRowTemplate, methodFields, URL, {
+                    method: "POST",
+                });
+                expect(code).toContain('method: "POST"');
+            });
+
+            it("commentItemTemplate includes method: PATCH in generated React code", () => {
+                const code = generateCode(commentItemTemplate, methodFields, URL, {
+                    method: "PATCH",
+                });
+                expect(code).toContain('method: "PATCH"');
+            });
+
+            it("GET method omits explicit method from generated React code", () => {
+                const code = generateCode(dynamicGridTemplate, methodFields, URL, {
+                    method: "GET",
+                });
+                expect(code).not.toContain("method:");
+                expect(code).toContain(`fetch("${URL}")`);
+            });
+
+            it("no method option omits explicit method from generated React code", () => {
+                const code = generateCode(dynamicGridTemplate, methodFields, URL);
+                expect(code).not.toContain("method:");
+            });
+
+            it("combines method with auth in generated React code", () => {
+                const code = generateCode(dynamicGridTemplate, methodFields, URL, {
+                    method: "POST",
+                    requiresAuth: true,
+                    bearerToken: "tok_method_auth",
+                });
+                expect(code).toContain('method: "POST"');
+                expect(code).toContain("Authorization");
+                expect(code).toContain("Bearer tok_method_auth");
+            });
+        });
+
+        describe("generateHtmlCode with method option", () => {
+            it("dynamicGridTemplate HTML includes method: POST", () => {
+                const html = generateHtmlCode(dynamicGridTemplate, methodFields, URL, {
+                    method: "POST",
+                });
+                expect(html).toContain('method: "POST"');
+                expect(html).toContain(`fetch("${URL}"`);
+            });
+
+            it("userCardTemplate HTML includes method: DELETE", () => {
+                const html = generateHtmlCode(userCardTemplate, methodFields, URL, {
+                    method: "DELETE",
+                });
+                expect(html).toContain('method: "DELETE"');
+            });
+
+            it("postCardTemplate HTML includes method: PUT", () => {
+                const html = generateHtmlCode(postCardTemplate, methodFields, URL, {
+                    method: "PUT",
+                });
+                expect(html).toContain('method: "PUT"');
+            });
+
+            it("productCardTemplate HTML includes method: PATCH", () => {
+                const html = generateHtmlCode(productCardTemplate, methodFields, URL, {
+                    method: "PATCH",
+                });
+                expect(html).toContain('method: "PATCH"');
+            });
+
+            it("todoListTemplate HTML includes method: POST", () => {
+                const html = generateHtmlCode(todoListTemplate, methodFields, URL, {
+                    method: "POST",
+                });
+                expect(html).toContain('method: "POST"');
+            });
+
+            it("transactionRowTemplate HTML includes method: POST", () => {
+                const html = generateHtmlCode(transactionRowTemplate, methodFields, URL, {
+                    method: "POST",
+                });
+                expect(html).toContain('method: "POST"');
+            });
+
+            it("commentItemTemplate HTML includes method: PATCH", () => {
+                const html = generateHtmlCode(commentItemTemplate, methodFields, URL, {
+                    method: "PATCH",
+                });
+                expect(html).toContain('method: "PATCH"');
+            });
+
+            it("GET method omits explicit method from HTML", () => {
+                const html = generateHtmlCode(dynamicGridTemplate, methodFields, URL, {
+                    method: "GET",
+                });
+                expect(html).not.toContain("method:");
+            });
+
+            it("HTML combines method with auth", () => {
+                const html = generateHtmlCode(dynamicGridTemplate, methodFields, URL, {
+                    method: "POST",
+                    requiresAuth: true,
+                    bearerToken: "tok_html_method",
+                });
+                expect(html).toContain('method: "POST"');
+                expect(html).toContain("Authorization");
+                expect(html).toContain("Bearer tok_html_method");
+            });
+        });
+    });
 });

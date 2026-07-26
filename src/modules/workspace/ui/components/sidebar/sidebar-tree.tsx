@@ -72,7 +72,6 @@ export function EndpointTreeNode({
                 }}
             >
                 <TreeExpander hasChildren={false} />
-                <TreeIcon hasChildren={false} />
                 {isRenaming ? (
                     <InlineRename
                         defaultValue={endpoint.name}
@@ -100,7 +99,7 @@ export function EndpointTreeNode({
                         <Lock className="size-3" />
                     </span>
                 )}
-                <MethodBadge method={endpoint.method} />
+                <MethodBadge method={endpoint.method} className="w-auto mr-1.5 text-[9px]" />
                 <TreeNodeMenu
                     showNewFolder={false}
                     showNewFile={false}

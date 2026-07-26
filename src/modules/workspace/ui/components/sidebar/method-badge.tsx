@@ -11,12 +11,13 @@ export const METHOD_STYLES: Record<HttpMethod, string> = {
     DELETE: "text-rose-500",
 };
 
-export function MethodBadge({ method }: { method: HttpMethod }) {
+export function MethodBadge({ method, className }: { method: HttpMethod; className?: string }) {
     return (
         <span
             className={cn(
-                "w-11.5 shrink-0 text-[10px] font-bold leading-none tabular-nums",
+                "w-10 shrink-0 text-[10px] font-bold leading-none tabular-nums",
                 METHOD_STYLES[method],
+                className,
             )}
         >
             {method}

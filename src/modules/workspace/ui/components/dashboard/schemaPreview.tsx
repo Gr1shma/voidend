@@ -483,7 +483,7 @@ export function SchemaPreview({
                                         activeMatch.template,
                                         schemaFields,
                                         fetchUrl,
-                                        { requiresAuth, bearerToken },
+                                        { requiresAuth, bearerToken, method: endpoint.method },
                                     )}
                                     lang="tsx"
                                     maxHeight="350px"
@@ -494,7 +494,7 @@ export function SchemaPreview({
                                         activeMatch.template,
                                         schemaFields,
                                         fetchUrl,
-                                        { requiresAuth, bearerToken },
+                                        { requiresAuth, bearerToken, method: endpoint.method },
                                     )}
                                     lang="html"
                                     maxHeight="350px"

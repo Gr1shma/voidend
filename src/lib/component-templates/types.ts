@@ -3,6 +3,7 @@ import type { SchemaField } from "~/lib/faker-options";
 export interface TemplateOptions {
     requiresAuth?: boolean;
     bearerToken?: string | null;
+    method?: string;
 }
 
 export interface ComponentTemplate {

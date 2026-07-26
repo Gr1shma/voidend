@@ -28,9 +28,39 @@ export function ApiClientLayout({
     const [createEndpointOpen, setCreateEndpointOpen] = useState(false);
     const createEndpoint = useCreateEndpoint();
 
+    const [sidebarWidth, setSidebarWidth] = useState(256);
+    const [isResizing, setIsResizing] = useState(false);
+
     useEffect(() => {
         setMockOrigin(getMockOrigin());
     }, []);
+
+    const handleMouseDown = useCallback((e: React.MouseEvent) => {
+        e.preventDefault();
+        setIsResizing(true);
+    }, []);
+
+    useEffect(() => {
+        if (!isResizing) return;
+
+        const handleMouseMove = (e: MouseEvent) => {
+            // Clamp sidebar width between 180px and 480px
+            const newWidth = Math.max(180, Math.min(480, e.clientX));
+            setSidebarWidth(newWidth);
+        };
+
+        const handleMouseUp = () => {
+            setIsResizing(false);
+        };
+
+        document.addEventListener("mousemove", handleMouseMove);
+        document.addEventListener("mouseup", handleMouseUp);
+
+        return () => {
+            document.removeEventListener("mousemove", handleMouseMove);
+            document.removeEventListener("mouseup", handleMouseUp);
+        };
+    }, [isResizing]);
 
     const handleSelectEndpoint = (endpointId: string, projectId: string) => {
         setSelectedEndpointId(endpointId);
@@ -107,10 +137,11 @@ export function ApiClientLayout({
             {/* Absolute sidebar */}
             <aside
                 className={cn(
-                    "absolute inset-y-0 left-0 z-20 w-64 flex flex-col bg-background border-r",
-                    "transition-transform duration-200 ease-in-out",
+                    "absolute inset-y-0 left-0 z-20 flex flex-col bg-background border-r",
+                    !isResizing && "transition-all duration-200 ease-in-out",
                     isCollapsed ? "-translate-x-full" : "translate-x-0",
                 )}
+                style={{ width: sidebarWidth }}
             >
                 <div className="flex items-center h-10 px-2 gap-1 border-b shrink-0">
                     <button
@@ -148,6 +179,15 @@ export function ApiClientLayout({
                         onSelectProject={setSelectedProjectId}
                     />
                 </div>
+
+                {/* Resize handle */}
+                <div
+                    onMouseDown={handleMouseDown}
+                    className={cn(
+                        "absolute top-0 -right-1 bottom-0 w-2 cursor-col-resize hover:bg-primary/30 active:bg-primary/50 transition-colors z-30",
+                        isResizing && "bg-primary/40",
+                    )}
+                />
             </aside>
 
             <div className="absolute inset-x-0 top-0 z-30 h-10 flex items-center pointer-events-none">
@@ -169,9 +209,10 @@ export function ApiClientLayout({
 
             <div
                 className={cn(
-                    "absolute inset-y-0 right-0 flex flex-col overflow-y-auto transition-all duration-200",
-                    isCollapsed ? "left-0" : "left-64",
+                    "absolute inset-y-0 right-0 flex flex-col overflow-y-auto",
+                    !isResizing && "transition-all duration-200",
                 )}
+                style={{ left: isCollapsed ? 0 : sidebarWidth }}
             >
                 <div className="h-10 shrink-0" />
                 {selectedProjectId && !isLoadingAllEndpoints && allEndpoints?.length === 0 && (

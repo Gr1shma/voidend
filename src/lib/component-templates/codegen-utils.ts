@@ -76,9 +76,15 @@ export function buildFetchHook(
     options?: TemplateOptions,
 ): string {
     const tokenVal = options?.bearerToken || "YOUR_TOKEN_HERE";
-    const fetchArgs = options?.requiresAuth
-        ? `"${endpointUrl}", {\n    headers: {\n      "Authorization": "Bearer ${tokenVal}"\n    }\n  }`
-        : `"${endpointUrl}"`;
+    const method = options?.method && options.method !== "GET" ? options.method : undefined;
+    const fetchOptions: string[] = [];
+    if (method) fetchOptions.push(`method: "${method}"`);
+    if (options?.requiresAuth)
+        fetchOptions.push(`headers: {\n      "Authorization": "Bearer ${tokenVal}"\n    }`);
+    const fetchArgs =
+        fetchOptions.length > 0
+            ? `"${endpointUrl}", {\n    ${fetchOptions.join(",\n    ")}\n  }`
+            : `"${endpointUrl}"`;
 
     return `function use${hookName}Data() {
   const [data, setData] = useState<${itemTypeName}[] | ${itemTypeName} | undefined>(undefined);
@@ -117,9 +123,15 @@ export function buildHtmlFetchScript(
     options?: TemplateOptions,
 ): string {
     const tokenVal = options?.bearerToken || "YOUR_TOKEN_HERE";
-    const fetchArgs = options?.requiresAuth
-        ? `"${endpointUrl}", {\n        headers: {\n          "Authorization": "Bearer ${tokenVal}"\n        }\n      }`
-        : `"${endpointUrl}"`;
+    const method = options?.method && options.method !== "GET" ? options.method : undefined;
+    const fetchOptions: string[] = [];
+    if (method) fetchOptions.push(`method: "${method}"`);
+    if (options?.requiresAuth)
+        fetchOptions.push(`headers: {\n          "Authorization": "Bearer ${tokenVal}"\n        }`);
+    const fetchArgs =
+        fetchOptions.length > 0
+            ? `"${endpointUrl}", {\n        ${fetchOptions.join(",\n        ")}\n      }`
+            : `"${endpointUrl}"`;
 
     return `  async function loadData() {
     const root = document.getElementById('root');
