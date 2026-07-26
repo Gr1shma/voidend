@@ -1,3 +1,4 @@
+import JSON5 from "json5";
 import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
 import { fieldsFromSchema } from "~/lib/faker-options";
@@ -29,7 +30,7 @@ export function RawJsonEditor({
     function handleChange(val: string) {
         onChange(val);
         try {
-            const parsed = JSON.parse(val);
+            const parsed = JSON5.parse(val);
             onFieldsSync(fieldsFromSchema(parsed));
             onErrorChange(null);
         } catch (err: any) {
@@ -39,7 +40,7 @@ export function RawJsonEditor({
 
     function handleFormat() {
         try {
-            const parsed = JSON.parse(value);
+            const parsed = JSON5.parse(value);
             const formatted = JSON.stringify(parsed, null, 2);
             onChange(formatted);
             onErrorChange(null);
@@ -162,7 +163,7 @@ export function RawJsonEditor({
         <div className="space-y-2">
             <div className="flex items-center justify-between">
                 <span className="text-[11px] font-mono text-muted-foreground">
-                    JSON Editor (Tab / Enter auto-indent, &quot; auto-pairs)
+                    JSON Editor (Tab / Enter auto-indent, &quot; auto-pairs, trailing commas OK)
                 </span>
                 <Button
                     type="button"

@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { MonitorPlay, SlidersHorizontal, Shield } from "lucide-react";
+import { SlidersHorizontal, Shield } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
+import { CodeBlock } from "~/components/code-block";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Separator } from "~/components/ui/separator";
@@ -187,19 +188,19 @@ export function SchemaBuilder({
                 orientation="horizontal"
                 className="w-full flex-1 flex flex-col gap-0"
             >
-                <div className="w-full px-6 pt-5 pb-3 border-b bg-muted/30">
-                    <TabsList className="grid w-full grid-cols-2 h-10">
+                <div className="w-full px-6 pt-5 pb-3 border-b">
+                    <TabsList className="flex w-full bg-zinc-200 dark:bg-zinc-800 p-0.5 rounded-lg h-9">
                         <TabsTrigger
                             value="schema"
-                            className="gap-2 text-xs font-semibold uppercase tracking-wider"
+                            className="flex-1 gap-2 text-xs font-semibold font-mono rounded-md data-[state=active]:bg-white data-[state=active]:dark:bg-zinc-900 data-[state=active]:shadow-xs"
                         >
-                            <SlidersHorizontal className="h-4 w-4" /> Schema &amp; Behavior
+                            <SlidersHorizontal className="h-3.5 w-3.5 text-blue-500" /> Schema
                         </TabsTrigger>
                         <TabsTrigger
                             value="auth"
-                            className="gap-2 text-xs font-semibold uppercase tracking-wider"
+                            className="flex-1 gap-2 text-xs font-semibold font-mono rounded-md data-[state=active]:bg-white data-[state=active]:dark:bg-zinc-900 data-[state=active]:shadow-xs"
                         >
-                            <Shield className="h-4 w-4 text-emerald-500" /> Authentication
+                            <Shield className="h-3.5 w-3.5 text-emerald-500" /> Authentication
                         </TabsTrigger>
                     </TabsList>
                 </div>
@@ -243,7 +244,7 @@ export function SchemaBuilder({
                             <div className="space-y-1.5">
                                 <Label className="text-sm font-semibold">Schema path</Label>
                                 <div className="flex items-stretch gap-2">
-                                    <div className="flex rounded-md bg-muted p-0.5 shrink-0">
+                                    <div className="flex bg-zinc-200 dark:bg-zinc-800 p-0.5 rounded-lg text-[11px] font-mono shrink-0">
                                         {(
                                             [
                                                 "GET",
@@ -257,17 +258,17 @@ export function SchemaBuilder({
                                                 key={m}
                                                 type="button"
                                                 onClick={() => setHttpMethod(m)}
-                                                className={`px-2 py-1 rounded-sm text-[11px] font-bold tracking-wide transition-colors ${
+                                                className={`px-2 py-1 rounded-md font-bold tracking-wide transition-colors ${
                                                     httpMethod === m
                                                         ? m === "GET"
-                                                            ? "bg-emerald-500/20 text-emerald-400 shadow-xs"
+                                                            ? "bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 shadow-xs"
                                                             : m === "POST"
-                                                              ? "bg-blue-500/20 text-blue-400 shadow-xs"
+                                                              ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 shadow-xs"
                                                               : m === "PUT"
-                                                                ? "bg-amber-500/20 text-amber-400 shadow-xs"
+                                                                ? "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 shadow-xs"
                                                                 : m === "PATCH"
-                                                                  ? "bg-purple-500/20 text-purple-400 shadow-xs"
-                                                                  : "bg-rose-500/20 text-rose-400 shadow-xs"
+                                                                  ? "bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 shadow-xs"
+                                                                  : "bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300 shadow-xs"
                                                         : "text-muted-foreground hover:text-foreground"
                                                 }`}
                                             >
@@ -318,7 +319,7 @@ export function SchemaBuilder({
                                         </Label>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <div className="flex rounded-md bg-muted p-0.5 text-xs">
+                                        <div className="flex items-center bg-zinc-200 dark:bg-zinc-800 p-0.5 rounded-lg text-xs font-mono">
                                             <button
                                                 type="button"
                                                 onClick={() => {
@@ -334,9 +335,9 @@ export function SchemaBuilder({
                                                     }
                                                     setEditorMode("flat");
                                                 }}
-                                                className={`px-2.5 py-1 rounded-sm font-medium transition-colors ${
+                                                className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
                                                     editorMode === "flat"
-                                                        ? "bg-background text-foreground shadow-xs font-semibold"
+                                                        ? "bg-white dark:bg-zinc-900 text-foreground shadow-xs"
                                                         : "text-muted-foreground hover:text-foreground"
                                                 }`}
                                             >
@@ -353,9 +354,9 @@ export function SchemaBuilder({
                                                     }
                                                     setEditorMode("raw");
                                                 }}
-                                                className={`px-2.5 py-1 rounded-sm font-medium transition-colors ${
+                                                className={`px-2.5 py-1 rounded-md font-medium transition-colors ${
                                                     editorMode === "raw"
-                                                        ? "bg-background text-foreground shadow-xs font-semibold"
+                                                        ? "bg-white dark:bg-zinc-900 text-foreground shadow-xs"
                                                         : "text-muted-foreground hover:text-foreground"
                                                 }`}
                                             >
@@ -393,17 +394,12 @@ export function SchemaBuilder({
                             <Separator />
 
                             {/* Live sample data preview */}
-                            <div className="overflow-hidden rounded-lg border border-border">
-                                <div className="flex items-center gap-1.5 border-b bg-muted/40 px-3 py-2">
-                                    <MonitorPlay className="h-3 w-3 text-primary" />
-                                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                        Live preview
-                                    </span>
-                                </div>
-                                <pre className="bg-zinc-950 p-3 font-mono text-[11px] leading-relaxed text-zinc-100 overflow-x-auto">
-                                    {JSON.stringify(previewData, null, 2)}
-                                </pre>
-                            </div>
+                            <CodeBlock
+                                code={JSON.stringify(previewData, null, 2)}
+                                lang="json"
+                                maxHeight="200px"
+                                showCopyButton={false}
+                            />
                         </CardContent>
                     </Card>
                 </TabsContent>

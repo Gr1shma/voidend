@@ -115,7 +115,7 @@ ${fieldLines.map((l) => `  ${l}`).join("\n")}
 /**
  * Builds a vanilla-JS fetch + DOM-render script block for HTML templates.
  * `renderFn` is a JS expression (string) that maps a single item to an
- * HTML string — the caller provides the item-level template string.
+ * HTML string, the caller provides the item-level template string.
  */
 export function buildHtmlFetchScript(
     endpointUrl: string,

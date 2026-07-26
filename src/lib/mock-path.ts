@@ -32,7 +32,7 @@ export function matchPath(pattern: string, incoming: string): boolean {
     return regex.test(incoming);
 }
 
-/** Mock route path segment after `/mock/{projectId}` — basePath + endpoint.path only. */
+/** Mock route path segment after `/mock/{projectId}`, basePath + endpoint.path only. */
 export function buildMockPath(basePath: string | undefined | null, endpointPath: string): string {
     return joinPath(basePath, endpointPath);
 }
