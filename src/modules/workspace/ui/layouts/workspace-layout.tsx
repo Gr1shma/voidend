@@ -172,7 +172,10 @@ export function ApiClientLayout({
                         selectedEndpointId={selectedEndpointId}
                         onSelectEndpoint={handleSelectEndpoint}
                         selectedProjectId={selectedProjectId}
-                        onSelectProject={setSelectedProjectId}
+                        onSelectProject={(id) => {
+                            setSelectedProjectId(id);
+                            setSelectedEndpointId(null);
+                        }}
                     />
                 </div>
 

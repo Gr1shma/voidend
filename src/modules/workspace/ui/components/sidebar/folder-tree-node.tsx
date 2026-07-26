@@ -58,7 +58,7 @@ export function FolderTreeNode({
                 }}
             >
                 <TreeExpander hasChildren={hasChildren} />
-                <TreeIcon hasChildren={hasChildren} />
+                <TreeIcon hasChildren />
                 {renamingId === collection.id ? (
                     <InlineRename
                         defaultValue={collection.name}
