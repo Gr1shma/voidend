@@ -13,6 +13,7 @@ import {
 } from "./dialogs";
 import { ProjectSettingsDialog } from "./project-settings-dialog";
 import { ProjectTreeNode } from "./sidebar-tree";
+import { SidebarSkeleton } from "./sidebar-skeleton";
 import {
     useCreateProject,
     useDeleteProject,
@@ -43,7 +44,7 @@ export const Sidebar = forwardRef<
     { selectedEndpointId, onSelectEndpoint, selectedProjectId, onSelectProject },
     ref,
 ) {
-    const { data: projects = [] } = useProjects();
+    const { data: projects = [], isLoading: isLoadingProjects } = useProjects();
     const [renamingId, setRenamingId] = useState<string | null>(null);
     const [modal, setModal] = useState<ModalTarget | null>(null);
     const [confirmState, setConfirmState] = useState<{
@@ -97,7 +98,9 @@ export const Sidebar = forwardRef<
         <>
             <aside className="flex h-full w-full flex-col bg-background">
                 <div className="flex-1 overflow-y-auto">
-                    {projects.length === 0 ? (
+                    {isLoadingProjects ? (
+                        <SidebarSkeleton />
+                    ) : projects.length === 0 ? (
                         <div className="mt-10 flex flex-col items-center gap-2 px-4 text-center text-xs text-muted-foreground">
                             <p>No projects yet.</p>
                             <div className="flex items-center gap-2">
@@ -149,7 +152,27 @@ export const Sidebar = forwardRef<
                                             confirmDangerousAction(
                                                 "Delete project?",
                                                 "This will permanently remove the project and all its contents.",
-                                                () => deleteProject.mutate({ id }),
+                                                () => {
+                                                    deleteProject.mutate(
+                                                        { id },
+                                                        {
+                                                            onSuccess: () => {
+                                                                const remainingProjects =
+                                                                    projects.filter(
+                                                                        (p) => p.id !== id,
+                                                                    );
+                                                                if (
+                                                                    remainingProjects.length > 0 &&
+                                                                    remainingProjects[0]
+                                                                ) {
+                                                                    onSelectProject(
+                                                                        remainingProjects[0].id,
+                                                                    );
+                                                                }
+                                                            },
+                                                        },
+                                                    );
+                                                },
                                             )
                                         }
                                         onDeleteFolder={(id) =>
@@ -198,7 +221,16 @@ export const Sidebar = forwardRef<
                     if (!open) setModal(null);
                 }}
                 onCreate={(title, basePath) => {
-                    createProject.mutate({ title, basePath });
+                    createProject.mutate(
+                        { title, basePath },
+                        {
+                            onSuccess: (res) => {
+                                if (res && "id" in res) {
+                                    onSelectProject(res.id as string);
+                                }
+                            },
+                        },
+                    );
                     setModal(null);
                 }}
             />

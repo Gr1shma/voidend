@@ -23,6 +23,7 @@ import {
 } from "./types";
 import { useEndpoints } from "~/hooks/use-endpoints";
 import { useFolders } from "~/hooks/use-folders";
+import { ProjectTreeNodeSkeleton } from "./sidebar-skeleton";
 
 function commitRename<T extends string>(
     currentName: string,
@@ -280,8 +281,10 @@ export function ProjectTreeNode({
     onDeleteFolder: (id: string) => void;
     onDeleteEndpoint: (id: string) => void;
 }) {
-    const { data: rawFolders = [] } = useFolders(project.id);
-    const { data: rawEndpoints = [] } = useEndpoints(project.id);
+    const { data: rawFolders = [], isLoading: isLoadingFolders } = useFolders(project.id);
+    const { data: rawEndpoints = [], isLoading: isLoadingEndpoints } = useEndpoints(project.id);
+
+    const isLoading = isLoadingFolders || isLoadingEndpoints;
 
     const folderTree = buildFolderTree(rawFolders as FolderRow[]);
 
@@ -347,48 +350,54 @@ export function ProjectTreeNode({
             </TreeNodeTrigger>
 
             <TreeNodeContent hasChildren>
-                {rootEndpoints.map((endpoint) => (
-                    <EndpointTreeNode
-                        key={endpoint.id}
-                        endpoint={endpoint}
-                        level={level + 1}
-                        isSelected={selectedEndpointId === endpoint.id}
-                        isRenaming={renamingId === endpoint.id}
-                        onSelect={() => onSelectEndpoint(endpoint.id, project.id)}
-                        onRenameConfirm={(name) => {
-                            commitRename(
-                                endpoint.name,
-                                name,
-                                (nextName) => {
-                                    onRenameEndpoint(endpoint.id, nextName);
-                                },
-                                () => setRenamingId(null),
-                            );
-                        }}
-                        onRenameCancel={() => setRenamingId(null)}
-                        onRenameStart={() => setRenamingId(endpoint.id)}
-                        onDelete={() => onDeleteEndpoint(endpoint.id)}
-                    />
-                ))}
-                {tree.map((collection, index) => (
-                    <FolderTreeNode
-                        key={collection.id}
-                        collection={collection}
-                        level={level + 1}
-                        isLast={index === tree.length - 1}
-                        projectId={project.id}
-                        selectedEndpointId={selectedEndpointId}
-                        onSelectEndpoint={onSelectEndpoint}
-                        renamingId={renamingId}
-                        setRenamingId={setRenamingId}
-                        onRenameFolder={onRenameFolder}
-                        onRenameEndpoint={onRenameEndpoint}
-                        onOpenModal={onOpenModal}
-                        onDeleteFolder={onDeleteFolder}
-                        onDeleteEndpoint={onDeleteEndpoint}
-                        endpoints={rawEndpoints as Endpoint[]}
-                    />
-                ))}
+                {isLoading ? (
+                    <ProjectTreeNodeSkeleton level={level + 1} />
+                ) : (
+                    <>
+                        {rootEndpoints.map((endpoint) => (
+                            <EndpointTreeNode
+                                key={endpoint.id}
+                                endpoint={endpoint}
+                                level={level + 1}
+                                isSelected={selectedEndpointId === endpoint.id}
+                                isRenaming={renamingId === endpoint.id}
+                                onSelect={() => onSelectEndpoint(endpoint.id, project.id)}
+                                onRenameConfirm={(name) => {
+                                    commitRename(
+                                        endpoint.name,
+                                        name,
+                                        (nextName) => {
+                                            onRenameEndpoint(endpoint.id, nextName);
+                                        },
+                                        () => setRenamingId(null),
+                                    );
+                                }}
+                                onRenameCancel={() => setRenamingId(null)}
+                                onRenameStart={() => setRenamingId(endpoint.id)}
+                                onDelete={() => onDeleteEndpoint(endpoint.id)}
+                            />
+                        ))}
+                        {tree.map((collection, index) => (
+                            <FolderTreeNode
+                                key={collection.id}
+                                collection={collection}
+                                level={level + 1}
+                                isLast={index === tree.length - 1}
+                                projectId={project.id}
+                                selectedEndpointId={selectedEndpointId}
+                                onSelectEndpoint={onSelectEndpoint}
+                                renamingId={renamingId}
+                                setRenamingId={setRenamingId}
+                                onRenameFolder={onRenameFolder}
+                                onRenameEndpoint={onRenameEndpoint}
+                                onOpenModal={onOpenModal}
+                                onDeleteFolder={onDeleteFolder}
+                                onDeleteEndpoint={onDeleteEndpoint}
+                                endpoints={rawEndpoints as Endpoint[]}
+                            />
+                        ))}
+                    </>
+                )}
             </TreeNodeContent>
         </TreeNode>
     );
