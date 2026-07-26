@@ -5,9 +5,11 @@ import { Code2, RotateCw, ShieldAlert, LayoutTemplate, Copy, Check } from "lucid
 import { Card, CardContent, CardHeader } from "~/components/ui/card";
 import { CodeBlock } from "~/components/code-block";
 import { Button } from "~/components/ui/button";
-import type { HttpMethod } from "../sidebar/types";
+import type { HttpMethod } from "../../sidebar/types";
 import { fieldsFromSchema } from "~/lib/faker-options";
 import { getTopMatches, generateCode, generateHtmlCode } from "~/lib/component-templates";
+import { generateFetchSnippet } from "./generate-fetch-snippet";
+import { SchemaPreviewSkeleton } from "./schema-preview-skeleton";
 
 interface SchemaPreviewProps {
     endpoint:
@@ -26,153 +28,8 @@ interface SchemaPreviewProps {
         | null
         | undefined;
     fetchUrl: string;
-    /** JWT bearer token to use when the endpoint requiresAuth */
     bearerToken?: string | null;
     isLoadingSchema?: boolean;
-}
-
-function generateFetchSnippet(
-    tab: "curl" | "js" | "tsx" | "python" | "go" | "rust" | "php",
-    url: string,
-    method: HttpMethod,
-    requiresAuth: boolean,
-    token?: string | null,
-) {
-    const tokenVal = token || "YOUR_TOKEN_HERE";
-
-    switch (tab) {
-        case "curl": {
-            const parts = [`curl -X ${method} "${url}"`];
-            parts.push('-H "Accept: application/json"');
-            if (requiresAuth) {
-                parts.push(`-H "Authorization: Bearer ${tokenVal}"`);
-            }
-            return parts.join(" \\\n  ");
-        }
-        case "js": {
-            const authHeaderJs = requiresAuth
-                ? `,\n    headers: {\n      "Authorization": "Bearer ${tokenVal}"\n    }`
-                : "";
-            return `fetch("${url}", {\n  method: "${method}"${authHeaderJs}\n})\n  .then((res) => res.json())\n  .then((data) => console.log(data))\n  .catch((err) => console.error(err));`;
-        }
-        case "tsx": {
-            const authHeaderTs = requiresAuth
-                ? `,\n      headers: {\n        "Authorization": "Bearer ${tokenVal}"\n      }`
-                : "";
-            return `async function fetchData<T = unknown>(): Promise<T> {\n  const response = await fetch("${url}", {\n    method: "${method}"${authHeaderTs}\n  });\n\n  if (!response.ok) {\n    throw new Error(\`HTTP error! status: \${response.status}\`);\n  }\n\n  return response.json() as Promise<T>;\n}`;
-        }
-        case "python": {
-            const headersObj = requiresAuth
-                ? `,\n    headers={\n        "Authorization": "Bearer ${tokenVal}"\n    }`
-                : "";
-            return `import requests\n\nresponse = requests.${method.toLowerCase()}(\n    "${url}"${headersObj}\n)\n\nprint(response.json())`;
-        }
-        case "go": {
-            const authGo = requiresAuth
-                ? `\n\treq.Header.Add("Authorization", "Bearer ${tokenVal}")`
-                : "";
-            return `package main\n\nimport (\n\t"fmt"\n\t"io"\n\t"net/http"\n)\n\nfunc main() {\n\tclient := &http.Client{}\n\treq, err := http.NewRequest("${method}", "${url}", nil)${authGo}\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\n\tresp, err := client.Do(req)\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tdefer resp.Body.Close()\n\n\tbody, _ := io.ReadAll(resp.Body)\n\tfmt.Println(string(body))\n}`;
-        }
-        case "rust": {
-            const authCall = requiresAuth ? `\n        .bearer_auth("${tokenVal}")` : "";
-            return `use reqwest::Error;\n\n#[tokio::main]\nasync fn main() -> Result<(), Error> {\n    let client = reqwest::Client::new();\n    let response = client\n        .${method.toLowerCase()}("${url}")${authCall}\n        .header("Accept", "application/json")\n        .send()\n        .await?;\n\n    let body = response.text().await?;\n    println!("{}", body);\n    Ok(())\n}`;
-        }
-        case "php": {
-            const authPhp = requiresAuth
-                ? `\n  "header" => "Authorization: Bearer ${tokenVal}\\r\\n"`
-                : "";
-            return `<?php\n$opts = [\n  "http" => [\n    "method" => "${method}"${authPhp}\n  ]\n];\n$context = stream_context_create($opts);\n$result = file_get_contents("${url}", false, $context);\necho $result;\n?>`;
-        }
-    }
-}
-
-function MockCodeBlock() {
-    return (
-        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-950 p-4 font-mono text-sm space-y-2">
-            <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-zinc-800 animate-pulse" />
-                <div className="w-24 h-4 rounded bg-zinc-800 animate-pulse" />
-            </div>
-            <div className="pl-6 space-y-2">
-                <div className="w-1/2 h-4 rounded bg-zinc-800 animate-pulse" />
-                <div className="w-3/4 h-4 rounded bg-zinc-800 animate-pulse" />
-                <div className="w-2/3 h-4 rounded bg-zinc-800 animate-pulse" />
-                <div className="w-1/3 h-4 rounded bg-zinc-800 animate-pulse" />
-            </div>
-            <div className="w-8 h-4 rounded bg-zinc-800 animate-pulse" />
-        </div>
-    );
-}
-
-export function SchemaPreviewSkeleton() {
-    return (
-        <div className="w-full mx-auto px-6 pb-6 h-full">
-            <Card className="border shadow-lg bg-muted/50">
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded bg-zinc-300 dark:bg-zinc-700 animate-pulse" />
-                        <div className="w-36 h-6 rounded bg-zinc-300 dark:bg-zinc-700 animate-pulse" />
-                    </div>
-                    <div className="w-24 h-8 rounded bg-zinc-300 dark:bg-zinc-700 animate-pulse" />
-                </CardHeader>
-
-                <CardContent className="space-y-6">
-                    {/* Field summary table skeleton */}
-                    <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-hidden">
-                        <div className="grid grid-cols-2 bg-zinc-200 dark:bg-zinc-900/50 px-4 py-2">
-                            <div className="w-12 h-3 rounded bg-zinc-300 dark:bg-zinc-700 animate-pulse" />
-                            <div className="w-12 h-3 rounded bg-zinc-300 dark:bg-zinc-700 animate-pulse" />
-                        </div>
-                        {[1, 2, 3].map((i) => (
-                            <div
-                                key={i}
-                                className="grid grid-cols-2 px-4 py-3 border-t border-zinc-150 dark:border-zinc-800/50"
-                            >
-                                <div className="w-24 h-4 rounded bg-zinc-200 dark:bg-zinc-800 animate-pulse" />
-                                <div className="w-16 h-4 rounded bg-zinc-200 dark:bg-zinc-800 animate-pulse" />
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Config summary skeleton */}
-                    <div className="flex gap-3">
-                        <div className="w-20 h-6 rounded bg-zinc-200 dark:bg-zinc-800 animate-pulse" />
-                        <div className="w-28 h-6 rounded bg-zinc-200 dark:bg-zinc-800 animate-pulse" />
-                        <div className="w-16 h-6 rounded bg-zinc-200 dark:bg-zinc-800 animate-pulse" />
-                    </div>
-
-                    {/* Live sample response skeleton */}
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                            <div className="w-28 h-4 rounded bg-zinc-200 dark:bg-zinc-800 animate-pulse" />
-                            <div className="w-28 h-8 rounded bg-zinc-200 dark:bg-zinc-800 animate-pulse" />
-                        </div>
-                        <MockCodeBlock />
-                    </div>
-
-                    {/* Component Generator Block skeleton */}
-                    <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 space-y-3">
-                        <div className="flex items-center justify-between">
-                            <div className="w-36 h-4 rounded bg-zinc-200 dark:bg-zinc-800 animate-pulse" />
-                            <div className="w-24 h-8 rounded bg-zinc-200 dark:bg-zinc-800 animate-pulse" />
-                        </div>
-                        <div className="w-3/4 h-3 rounded bg-zinc-200 dark:bg-zinc-800 animate-pulse" />
-                        <MockCodeBlock />
-                    </div>
-
-                    {/* API Fetch Code Snippets Block skeleton */}
-                    <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 space-y-3">
-                        <div className="flex items-center justify-between">
-                            <div className="w-32 h-4 rounded bg-zinc-200 dark:bg-zinc-800 animate-pulse" />
-                            <div className="w-48 h-8 rounded bg-zinc-200 dark:bg-zinc-800 animate-pulse" />
-                        </div>
-                        <div className="w-2/3 h-3 rounded bg-zinc-200 dark:bg-zinc-800 animate-pulse" />
-                        <MockCodeBlock />
-                    </div>
-                </CardContent>
-            </Card>
-        </div>
-    );
 }
 
 export function SchemaPreview({
@@ -214,7 +71,6 @@ export function SchemaPreview({
         "curl" | "js" | "tsx" | "python" | "go" | "rust" | "php"
     >("curl");
 
-    // Keep active template selection in sync when matches change
     const activeMatch =
         topMatches.find((m) => m.template.id === selectedTemplateId) ?? topMatches[0];
 
@@ -315,7 +171,6 @@ export function SchemaPreview({
                 </CardHeader>
 
                 <CardContent className="space-y-6">
-                    {/* Auth notice banners */}
                     {requiresAuth && !bearerToken && (
                         <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-600 dark:text-amber-400">
                             <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
@@ -347,7 +202,6 @@ export function SchemaPreview({
                         </div>
                     )}
 
-                    {/* Field summary table */}
                     <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-hidden">
                         <div className="grid grid-cols-2 bg-zinc-100 dark:bg-zinc-900 px-4 py-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
                             <span>Field</span>
@@ -374,7 +228,6 @@ export function SchemaPreview({
                         })}
                     </div>
 
-                    {/* Config summary */}
                     <div className="flex flex-wrap gap-3 text-xs font-mono">
                         <span className="px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-900">
                             delay: {endpoint.delayMs}ms
@@ -387,7 +240,6 @@ export function SchemaPreview({
                         </span>
                     </div>
 
-                    {/* Live sample response */}
                     <div>
                         <div className="flex items-center justify-between mb-3">
                             <h3 className="text-sm font-bold font-mono text-muted-foreground">
@@ -434,7 +286,6 @@ export function SchemaPreview({
                         ) : null}
                     </div>
 
-                    {/* Component Generator Block */}
                     {topMatches.length > 0 && activeMatch && (
                         <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 space-y-3">
                             <div className="flex items-center justify-between">
@@ -503,7 +354,6 @@ export function SchemaPreview({
                         </div>
                     )}
 
-                    {/* API Fetch Code Snippets Block */}
                     <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 space-y-3">
                         <div className="flex items-center justify-between">
                             <h3 className="text-sm font-bold font-mono text-muted-foreground flex items-center gap-2">
