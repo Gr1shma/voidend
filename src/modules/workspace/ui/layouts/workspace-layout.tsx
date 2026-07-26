@@ -1,14 +1,17 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { PanelLeftIcon, Plus, Upload } from "lucide-react";
+import { PanelLeftIcon, Plus, Upload, Code2 } from "lucide-react";
 import { cn } from "~/lib/utils";
 import { Sidebar, type SidebarHandle } from "../components/sidebar/workspace-sidebar";
 import { EndpointBar } from "../components/dashboard/endpointBar";
 import { SchemaPreview } from "../components/dashboard/schemaPreview";
 import { buildMockUrl, getMockOrigin } from "~/lib/mock-path";
-import { useEndpointById, useEndpoints } from "~/hooks/use-endpoints";
+import { useEndpointById, useEndpoints, useCreateEndpoint } from "~/hooks/use-endpoints";
 import { useProjectById } from "~/hooks/use-projects";
 import { ModeToggle } from "~/components/mode-toggle";
+import { CreateEndpointDialog } from "../components/sidebar/dialogs";
+import { Button } from "~/components/ui/button";
+import type { HttpMethod } from "../components/sidebar/types";
 
 export function ApiClientLayout({
     isCollapsed,
@@ -22,6 +25,8 @@ export function ApiClientLayout({
     const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
     const [mockOrigin, setMockOrigin] = useState(getMockOrigin);
     const [bearerToken, setBearerToken] = useState<string | null>(null);
+    const [createEndpointOpen, setCreateEndpointOpen] = useState(false);
+    const createEndpoint = useCreateEndpoint();
 
     useEffect(() => {
         setMockOrigin(getMockOrigin());
@@ -33,8 +38,9 @@ export function ApiClientLayout({
     };
 
     const { data: project } = useProjectById(selectedProjectId);
-    const { data: endpoint } = useEndpointById(selectedEndpointId);
-    const { data: allEndpoints } = useEndpoints(selectedProjectId);
+    const { data: endpoint, isLoading: isLoadingEndpoint } = useEndpointById(selectedEndpointId);
+    const { data: allEndpoints, isLoading: isLoadingAllEndpoints } =
+        useEndpoints(selectedProjectId);
 
     const fetchUrl =
         endpoint && selectedProjectId
@@ -75,6 +81,27 @@ export function ApiClientLayout({
         void fetchBearerToken();
     }, [fetchBearerToken]);
 
+    const handleCreateEndpoint = (name: string, method: HttpMethod, path: string) => {
+        if (!selectedProjectId) return;
+        const normalizedPath = path === "/" ? `/${name.toLowerCase().replaceAll(" ", "-")}` : path;
+        createEndpoint.mutate(
+            {
+                name,
+                method,
+                path: normalizedPath.startsWith("/") ? normalizedPath : `/${normalizedPath}`,
+                projectId: selectedProjectId,
+            },
+            {
+                onSuccess: (res) => {
+                    setCreateEndpointOpen(false);
+                    if (res && "id" in res) {
+                        setSelectedEndpointId(res.id);
+                    }
+                },
+            },
+        );
+    };
+
     return (
         <div className="relative h-full w-full overflow-hidden">
             {/* Absolute sidebar */}
@@ -89,7 +116,7 @@ export function ApiClientLayout({
                     <button
                         onClick={onToggle}
                         className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                        aria-label="Close sidebar"
+                        aria-label="Open sidebar"
                     >
                         <PanelLeftIcon className="h-4 w-4" />
                     </button>
@@ -147,24 +174,52 @@ export function ApiClientLayout({
                 )}
             >
                 <div className="h-10 shrink-0" />
-                {selectedProjectId && (
-                    <EndpointBar
-                        projectId={selectedProjectId}
-                        endpointId={selectedEndpointId}
-                        mockOrigin={mockOrigin}
-                        endpoint={endpoint}
-                        project={project}
-                    />
+                {selectedProjectId && !isLoadingAllEndpoints && allEndpoints?.length === 0 && (
+                    <div className="flex flex-col items-center justify-center flex-1 p-6 text-center">
+                        <div className="max-w-md space-y-4">
+                            <div className="flex justify-center">
+                                <div className="p-4 rounded-full bg-primary/10 text-primary">
+                                    <Code2 className="w-10 h-10" />
+                                </div>
+                            </div>
+                            <h3 className="text-xl font-bold">No endpoints created yet</h3>
+                            <p className="text-sm text-muted-foreground">
+                                Create an endpoint to get started. You can specify a path, HTTP
+                                method, and design your mock response schema.
+                            </p>
+                            <Button onClick={() => setCreateEndpointOpen(true)} className="gap-2">
+                                <Plus className="w-4 h-4" /> Create Endpoint
+                            </Button>
+                        </div>
+                    </div>
                 )}
-                {endpoint && fetchUrl && (
-                    <SchemaPreview
-                        key={selectedEndpointId}
-                        endpoint={endpoint}
-                        fetchUrl={fetchUrl}
-                        bearerToken={bearerToken}
-                    />
+                {selectedProjectId && allEndpoints && allEndpoints.length > 0 && (
+                    <>
+                        <EndpointBar
+                            projectId={selectedProjectId}
+                            endpointId={selectedEndpointId}
+                            mockOrigin={mockOrigin}
+                            endpoint={endpoint}
+                            project={project}
+                        />
+                        {selectedEndpointId && (
+                            <SchemaPreview
+                                key={selectedEndpointId}
+                                endpoint={endpoint}
+                                fetchUrl={fetchUrl}
+                                bearerToken={bearerToken}
+                                isLoadingSchema={isLoadingEndpoint}
+                            />
+                        )}
+                    </>
                 )}
             </div>
+
+            <CreateEndpointDialog
+                open={createEndpointOpen}
+                onOpenChange={setCreateEndpointOpen}
+                onCreate={handleCreateEndpoint}
+            />
         </div>
     );
 }
