@@ -5,7 +5,52 @@ function normalize(s: string): string {
 }
 
 export function safeGet(k: string | undefined): string {
-    return k ? `(item[${JSON.stringify(k)}] ?? '')` : "''";
+    if (!k) return "''";
+    if (k.includes(".")) {
+        const parts = k.split(".");
+        return `(${parts.map((p) => `item?.[${JSON.stringify(p)}]`).join(".") ?? "''"})`;
+    }
+    return `(item[${JSON.stringify(k)}] ?? '')`;
+}
+
+export function mapTsType(dt: string): string {
+    const d = dt.toLowerCase();
+    if (d.includes("boolean")) return "boolean";
+    if (
+        d.includes("number") ||
+        d.includes("int") ||
+        d.includes("float") ||
+        d.includes("price") ||
+        d.includes("amount")
+    )
+        return "number";
+    return "string";
+}
+
+/**
+ * Finds a field based on matching its faker dataType string.
+ */
+export function findFieldByDataType(
+    fields: SchemaField[],
+    dataTypePatterns: string[],
+): string | undefined {
+    return fields.find((f) => {
+        const dt = f.dataType.toLowerCase();
+        return dataTypePatterns.some((pattern) => dt.includes(pattern.toLowerCase()));
+    })?.fieldName;
+}
+
+/**
+ * Finds all fields matching any of the given faker dataType patterns.
+ */
+export function filterFieldsByDataType(
+    fields: SchemaField[],
+    dataTypePatterns: string[],
+): SchemaField[] {
+    return fields.filter((f) => {
+        const dt = f.dataType.toLowerCase();
+        return dataTypePatterns.some((pattern) => dt.includes(pattern.toLowerCase()));
+    });
 }
 
 /**

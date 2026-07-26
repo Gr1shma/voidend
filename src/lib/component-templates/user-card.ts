@@ -1,6 +1,8 @@
 import type { ComponentTemplate } from "./types";
 import {
     findField,
+    findFieldByDataType,
+    mapTsType,
     buildFetchHook,
     buildInterface,
     buildHtmlFetchScript,
@@ -12,25 +14,56 @@ export const userCardTemplate: ComponentTemplate = {
     id: "user-card",
     name: "User Card",
     description: "Avatar + profile details grid. Adapts to present fields.",
-    requiredFields: ["username", "fullName", "name"],
-    optionalFields: ["email", "jobTitle", "phone", "bio", "avatar", "id"],
+    requiredFields: [
+        "$faker.person.fullName",
+        "$faker.person.firstName",
+        "$faker.person.lastName",
+        "$faker.internet.username",
+    ],
+    optionalFields: [
+        "$faker.internet.email",
+        "$faker.person.jobTitle",
+        "$faker.phone.number",
+        "$faker.person.bio",
+        "$faker.image.avatar",
+        "$faker.string.uuid",
+    ],
     code: (fields, endpointUrl) => {
-        const idField = findField(fields, ["id", "userid", "uuid"]) ?? "id";
-        const usernameField = findField(fields, ["username", "handle"]);
-        const fullNameField = findField(fields, ["fullname", "name", "displayname"]) ?? "name";
-        const avatarField = findField(fields, ["avatar", "image", "photo", "picture"]);
-        const emailField = findField(fields, ["email"]);
-        const jobTitleField = findField(fields, ["jobtitle", "role", "title"]);
-        const phoneField = findField(fields, ["phone", "phonenumber", "mobile", "cell"]);
-        const bioField = findField(fields, ["bio", "about", "description"]);
+        const idField =
+            findFieldByDataType(fields, ["string.uuid", "string.nanoid", "number.int"]) ??
+            findField(fields, ["id", "userid", "uuid"]) ??
+            fields[0]?.fieldName ??
+            "id";
+        const fullNameField =
+            findFieldByDataType(fields, [
+                "person.fullName",
+                "person.firstName",
+                "person.lastName",
+            ]) ??
+            findField(fields, ["fullname", "name", "displayname"]) ??
+            "name";
+        const usernameField =
+            findFieldByDataType(fields, ["internet.username"]) ??
+            findField(fields, ["username", "handle"]);
+        const avatarField =
+            findFieldByDataType(fields, ["image.avatar", "image.url", "image.datauri"]) ??
+            findField(fields, ["avatar", "image", "photo", "picture"]);
+        const emailField =
+            findFieldByDataType(fields, ["internet.email"]) ?? findField(fields, ["email"]);
+        const jobTitleField =
+            findFieldByDataType(fields, ["person.jobTitle"]) ??
+            findField(fields, ["jobtitle", "role", "title"]);
+        const phoneField =
+            findFieldByDataType(fields, ["phone.number", "phone.imei"]) ??
+            findField(fields, ["phone", "phonenumber", "mobile", "cell"]);
+        const bioField =
+            findFieldByDataType(fields, ["person.bio", "lorem.paragraph", "lorem.sentence"]) ??
+            findField(fields, ["bio", "about", "description"]);
 
-        const interfaceLines = [`${idField}: string;`, `${fullNameField}: string;`];
-        if (usernameField) interfaceLines.push(`${usernameField}: string;`);
-        if (avatarField) interfaceLines.push(`${avatarField}: string;`);
-        if (emailField) interfaceLines.push(`${emailField}: string;`);
-        if (jobTitleField) interfaceLines.push(`${jobTitleField}: string;`);
-        if (phoneField) interfaceLines.push(`${phoneField}: string;`);
-        if (bioField) interfaceLines.push(`${bioField}: string;`);
+        const interfaceLines = fields.map((f) => {
+            const name = f.fieldName.includes(".") ? `"${f.fieldName}"?` : f.fieldName;
+            return `${name}: ${mapTsType(f.dataType)};`;
+        });
 
         return `import { useEffect, useState } from "react";
 
@@ -41,36 +74,36 @@ ${buildFetchHook("UserCard", endpointUrl, "User")}
 export function UserCard() {
   const { data, loading, error } = useUserCardData();
 
-  if (loading) return <div className="p-4 text-sm text-gray-500">Loading...</div>;
-  if (error) return <div className="p-4 text-sm text-red-500">Error: {error}</div>;
+  if (loading) return <div style={{ padding: "1rem", fontSize: "0.875rem", color: "#71717a" }}>Loading...</div>;
+  if (error) return <div style={{ padding: "1rem", fontSize: "0.875rem", color: "#ef4444" }}>Error: {error}</div>;
   if (!data) return null;
 
   const users = Array.isArray(data) ? data : [data];
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <div style={{ display: "grid", gap: "0.75rem", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}>
       {users.map((user) => (
-        <div key={user.${idField}} className="flex flex-col gap-3 rounded-lg border p-4 shadow-sm bg-white dark:bg-zinc-900">
-          <div className="flex items-center gap-3">
+        <div key={user.${idField}} style={{ display: "flex", flexDirection: "column", gap: "0.75rem", borderRadius: "12px", border: "1px solid #e4e4e7", padding: "1rem", backgroundColor: "#ffffff", boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
 ${
     avatarField
         ? `            <img
               src={user.${avatarField}}
               alt={user.${fullNameField}}
-              className="h-12 w-12 rounded-full object-cover shrink-0"
+              style={{ height: "3rem", width: "3rem", borderRadius: "9999px", objectFit: "cover", flexShrink: 0 }}
             />`
-        : `            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-200 dark:bg-zinc-700 font-semibold text-zinc-600 dark:text-zinc-200 shrink-0">
+        : `            <div style={{ display: "flex", height: "3rem", width: "3rem", alignItems: "center", justifyContent: "center", borderRadius: "9999px", backgroundColor: "#e4e4e7", fontWeight: 600, color: "#52525b", flexShrink: 0 }}>
               {user.${fullNameField}?.charAt(0) || "U"}
             </div>`
 }
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-medium text-base">{user.${fullNameField}}</p>
-${usernameField ? `              <p className="truncate text-sm text-gray-500">@{user.${usernameField}}</p>\n` : ""}${jobTitleField ? `              <p className="truncate text-xs text-gray-400">{user.${jobTitleField}}</p>\n` : ""}            </div>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <p style={{ margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 500, fontSize: "1rem", color: "#18181b" }}>{user.${fullNameField}}</p>
+${usernameField ? `              <p style={{ margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "0.875rem", color: "#71717a" }}>@{user.${usernameField}}</p>\n` : ""}${jobTitleField ? `              <p style={{ margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "0.75rem", color: "#a1a1aa" }}>{user.${jobTitleField}}</p>\n` : ""}            </div>
           </div>
-${bioField ? `          <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">{user.${bioField}}</p>\n` : ""}${
+${bioField ? `          <p style={{ margin: 0, fontSize: "0.75rem", color: "#52525b", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{user.${bioField}}</p>\n` : ""}${
             emailField || phoneField
-                ? `          <div className="pt-2 border-t text-xs text-gray-500 space-y-1">
-${emailField ? `            {user.${emailField} && <p className="truncate">Email: {user.${emailField}}</p>}\n` : ""}${phoneField ? `            {user.${phoneField} && <p className="truncate">Phone: {user.${phoneField}}</p>}\n` : ""}          </div>\n`
+                ? `          <div style={{ paddingTop: "0.5rem", borderTop: "1px solid #e4e4e7", fontSize: "0.75rem", color: "#71717a", display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+${emailField ? `            {user.${emailField} && <p style={{ margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Email: {user.${emailField}}</p>}\n` : ""}${phoneField ? `            {user.${phoneField} && <p style={{ margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Phone: {user.${phoneField}}</p>}\n` : ""}          </div>\n`
                 : ""
         }        </div>
       ))}
@@ -80,13 +113,31 @@ ${emailField ? `            {user.${emailField} && <p className="truncate">Email
 `;
     },
     htmlCode: (fields, endpointUrl) => {
-        const fullNameField = findField(fields, ["fullname", "name", "displayname"]) ?? "name";
-        const usernameField = findField(fields, ["username", "handle"]);
-        const avatarField = findField(fields, ["avatar", "image", "photo", "picture"]);
-        const emailField = findField(fields, ["email"]);
-        const jobTitleField = findField(fields, ["jobtitle", "role", "title"]);
-        const phoneField = findField(fields, ["phone", "phonenumber", "mobile", "cell"]);
-        const bioField = findField(fields, ["bio", "about", "description"]);
+        const fullNameField =
+            findFieldByDataType(fields, [
+                "person.fullName",
+                "person.firstName",
+                "person.lastName",
+            ]) ??
+            findField(fields, ["fullname", "name", "displayname"]) ??
+            "name";
+        const usernameField =
+            findFieldByDataType(fields, ["internet.username"]) ??
+            findField(fields, ["username", "handle"]);
+        const avatarField =
+            findFieldByDataType(fields, ["image.avatar", "image.url", "image.datauri"]) ??
+            findField(fields, ["avatar", "image", "photo", "picture"]);
+        const emailField =
+            findFieldByDataType(fields, ["internet.email"]) ?? findField(fields, ["email"]);
+        const jobTitleField =
+            findFieldByDataType(fields, ["person.jobTitle"]) ??
+            findField(fields, ["jobtitle", "role", "title"]);
+        const phoneField =
+            findFieldByDataType(fields, ["phone.number", "phone.imei"]) ??
+            findField(fields, ["phone", "phonenumber", "mobile", "cell"]);
+        const bioField =
+            findFieldByDataType(fields, ["person.bio", "lorem.paragraph", "lorem.sentence"]) ??
+            findField(fields, ["bio", "about", "description"]);
 
         const avatarHtml = avatarField
             ? `\${${safeGet(avatarField)} ? \`<img class="avatar" src="\${${safeGet(avatarField)}}" alt="\${${safeGet(fullNameField)}}">\` : \`<div class="avatar-placeholder">\${String(${safeGet(fullNameField)}).charAt(0).toUpperCase() || 'U'}</div>\`}`

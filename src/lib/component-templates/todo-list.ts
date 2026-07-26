@@ -1,6 +1,8 @@
 import type { ComponentTemplate } from "./types";
 import {
     findField,
+    findFieldByDataType,
+    mapTsType,
     buildFetchHook,
     buildInterface,
     buildHtmlFetchScript,
@@ -12,29 +14,61 @@ export const todoListTemplate: ComponentTemplate = {
     id: "todo-list",
     name: "Todo List",
     description: "Checkbox list adaptively rendering title, status, priority, dates & tags.",
-    requiredFields: ["title", "completed", "task", "done"],
-    optionalFields: ["dueDate", "priority", "category", "description", "assignee", "id"],
+    requiredFields: ["$faker.lorem.words", "$faker.lorem.sentence", "$faker.datatype.boolean"],
+    optionalFields: [
+        "$faker.date.future",
+        "$faker.date.recent",
+        "$faker.person.firstName",
+        "$faker.person.fullName",
+        "$faker.lorem.paragraph",
+        "$faker.string.uuid",
+    ],
     code: (fields, endpointUrl) => {
-        const idField = findField(fields, ["id", "todoid", "uuid"]) ?? "id";
-        const titleField = findField(fields, ["title", "task", "name", "summary"]) ?? "title";
+        const idField =
+            findFieldByDataType(fields, ["string.uuid", "string.nanoid", "number.int"]) ??
+            findField(fields, ["id", "todoid", "uuid"]) ??
+            fields[0]?.fieldName ??
+            "id";
+        const titleField =
+            findFieldByDataType(fields, [
+                "lorem.words",
+                "lorem.word",
+                "lorem.sentence",
+                "system.fileName",
+            ]) ??
+            findField(fields, ["title", "task", "name", "summary"]) ??
+            "title";
         const completedField =
-            findField(fields, ["completed", "done", "isdone", "iscompleted"]) ?? "completed";
-        const dueDateField = findField(fields, ["duedate", "deadline", "date", "due"]);
-        const priorityField = findField(fields, ["priority", "level", "urgency"]);
-        const categoryField = findField(fields, ["category", "tag", "project", "label"]);
-        const assigneeField = findField(fields, ["assignee", "assignedto", "user", "owner"]);
-        const descriptionField = findField(fields, ["description", "details", "notes"]);
+            findFieldByDataType(fields, ["datatype.boolean"]) ??
+            findField(fields, ["completed", "done", "isdone", "iscompleted"]) ??
+            "completed";
+        const dueDateField =
+            findFieldByDataType(fields, [
+                "date.future",
+                "date.recent",
+                "date.anytime",
+                "date.soon",
+            ]) ?? findField(fields, ["duedate", "deadline", "date", "due"]);
+        const priorityField =
+            findFieldByDataType(fields, ["color.human", "lorem.word"]) ??
+            findField(fields, ["priority", "level", "urgency"]);
+        const categoryField =
+            findFieldByDataType(fields, ["commerce.department", "book.genre"]) ??
+            findField(fields, ["category", "tag", "project", "label"]);
+        const assigneeField =
+            findFieldByDataType(fields, [
+                "person.fullName",
+                "person.firstName",
+                "internet.username",
+            ]) ?? findField(fields, ["assignee", "assignedto", "user", "owner"]);
+        const descriptionField =
+            findFieldByDataType(fields, ["lorem.paragraph", "lorem.sentence"]) ??
+            findField(fields, ["description", "details", "notes"]);
 
-        const interfaceLines = [
-            `${idField}: string;`,
-            `${titleField}: string;`,
-            `${completedField}: boolean;`,
-        ];
-        if (dueDateField) interfaceLines.push(`${dueDateField}: string;`);
-        if (priorityField) interfaceLines.push(`${priorityField}: string;`);
-        if (categoryField) interfaceLines.push(`${categoryField}: string;`);
-        if (assigneeField) interfaceLines.push(`${assigneeField}: string;`);
-        if (descriptionField) interfaceLines.push(`${descriptionField}: string;`);
+        const interfaceLines = fields.map((f) => {
+            const name = f.fieldName.includes(".") ? `"${f.fieldName}"?` : f.fieldName;
+            return `${name}: ${mapTsType(f.dataType)};`;
+        });
 
         return `import { useEffect, useState } from "react";
 
@@ -45,37 +79,37 @@ ${buildFetchHook("TodoList", endpointUrl, "Todo")}
 export function TodoList() {
   const { data, loading, error } = useTodoListData();
 
-  if (loading) return <div className="p-4 text-sm text-gray-500">Loading...</div>;
-  if (error) return <div className="p-4 text-sm text-red-500">Error: {error}</div>;
+  if (loading) return <div style={{ padding: "1rem", fontSize: "0.875rem", color: "#71717a" }}>Loading...</div>;
+  if (error) return <div style={{ padding: "1rem", fontSize: "0.875rem", color: "#ef4444" }}>Error: {error}</div>;
   if (!data) return null;
 
   const todos = Array.isArray(data) ? data : [data];
 
   return (
-    <ul className="divide-y divide-zinc-200 dark:divide-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
-      {todos.map((todo) => (
-        <li key={todo.${idField}} className="flex flex-col gap-2 p-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
-          <div className="flex items-center gap-3">
+    <ul style={{ listStyle: "none", margin: 0, padding: 0, border: "1px solid #e4e4e7", borderRadius: "12px", backgroundColor: "#ffffff", overflow: "hidden" }}>
+      {todos.map((todo, idx) => (
+        <li key={todo.${idField}} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", padding: "0.75rem 1rem", borderBottom: idx === todos.length - 1 ? "none" : "1px solid #e4e4e7" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
             <input
               type="checkbox"
               checked={Boolean(todo.${completedField})}
               readOnly
-              className="h-4 w-4 rounded border-zinc-300 text-primary focus:ring-primary cursor-pointer"
+              style={{ height: "1rem", width: "1rem", borderRadius: "4px", accentColor: "#6366f1", cursor: "pointer" }}
             />
-            <span className={todo.${completedField} ? "flex-1 font-medium text-zinc-400 line-through text-sm" : "flex-1 font-medium text-zinc-900 dark:text-zinc-100 text-sm"}>
+            <span style={{ flex: 1, fontWeight: 500, fontSize: "0.875rem", color: todo.${completedField} ? "#a1a1aa" : "#18181b", textDecoration: todo.${completedField} ? "line-through" : "none" }}>
               {todo.${titleField}}
             </span>
-${priorityField ? `            {todo.${priorityField} && <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">{todo.${priorityField}}</span>}\n` : ""}${categoryField ? `            {todo.${categoryField} && <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">{todo.${categoryField}}</span>}\n` : ""}          </div>
+${priorityField ? `            {todo.${priorityField} && <span style={{ padding: "0.125rem 0.5rem", borderRadius: "4px", fontSize: "10px", fontFamily: "monospace", textTransform: "uppercase", fontWeight: 600, backgroundColor: "#fef3c7", color: "#92400e" }}>{todo.${priorityField}}</span>}\n` : ""}${categoryField ? `            {todo.${categoryField} && <span style={{ padding: "0.125rem 0.5rem", borderRadius: "4px", fontSize: "10px", fontFamily: "monospace", backgroundColor: "#f4f4f5", color: "#52525b" }}>{todo.${categoryField}}</span>}\n` : ""}          </div>
 
 ${
     descriptionField
         ? `          {todo.${descriptionField} && (
-            <p className="ml-7 text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2">{todo.${descriptionField}}</p>
+            <p style={{ marginLeft: "1.75rem", marginTop: 0, marginBottom: 0, fontSize: "0.75rem", color: "#71717a", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{todo.${descriptionField}}</p>
           )}\n`
         : ""
 }${
             dueDateField || assigneeField
-                ? `          <div className="ml-7 flex items-center gap-4 text-xs text-zinc-400">
+                ? `          <div style={{ marginLeft: "1.75rem", display: "flex", alignItems: "center", gap: "1rem", fontSize: "0.75rem", color: "#a1a1aa" }}>
 ${dueDateField ? `            {todo.${dueDateField} && <span>Due: {todo.${dueDateField}}</span>}\n` : ""}${assigneeField ? `            {todo.${assigneeField} && <span>Assignee: {todo.${assigneeField}}</span>}\n` : ""}          </div>\n`
                 : ""
         }        </li>
@@ -86,14 +120,41 @@ ${dueDateField ? `            {todo.${dueDateField} && <span>Due: {todo.${dueDat
 `;
     },
     htmlCode: (fields, endpointUrl) => {
-        const titleField = findField(fields, ["title", "task", "name", "summary"]) ?? "title";
+        const titleField =
+            findFieldByDataType(fields, [
+                "lorem.words",
+                "lorem.word",
+                "lorem.sentence",
+                "system.fileName",
+            ]) ??
+            findField(fields, ["title", "task", "name", "summary"]) ??
+            "title";
         const completedField =
-            findField(fields, ["completed", "done", "isdone", "iscompleted"]) ?? "completed";
-        const dueDateField = findField(fields, ["duedate", "deadline", "date", "due"]);
-        const priorityField = findField(fields, ["priority", "level", "urgency"]);
-        const categoryField = findField(fields, ["category", "tag", "project", "label"]);
-        const descriptionField = findField(fields, ["description", "details", "notes"]);
-        const assigneeField = findField(fields, ["assignee", "assignedto", "user", "owner"]);
+            findFieldByDataType(fields, ["datatype.boolean"]) ??
+            findField(fields, ["completed", "done", "isdone", "iscompleted"]) ??
+            "completed";
+        const dueDateField =
+            findFieldByDataType(fields, [
+                "date.future",
+                "date.recent",
+                "date.anytime",
+                "date.soon",
+            ]) ?? findField(fields, ["duedate", "deadline", "date", "due"]);
+        const priorityField =
+            findFieldByDataType(fields, ["color.human", "lorem.word"]) ??
+            findField(fields, ["priority", "level", "urgency"]);
+        const categoryField =
+            findFieldByDataType(fields, ["commerce.department", "book.genre"]) ??
+            findField(fields, ["category", "tag", "project", "label"]);
+        const descriptionField =
+            findFieldByDataType(fields, ["lorem.paragraph", "lorem.sentence"]) ??
+            findField(fields, ["description", "details", "notes"]);
+        const assigneeField =
+            findFieldByDataType(fields, [
+                "person.fullName",
+                "person.firstName",
+                "internet.username",
+            ]) ?? findField(fields, ["assignee", "assignedto", "user", "owner"]);
 
         const priorityBadge = priorityField
             ? `\${${safeGet(priorityField)} ? \`<span class="badge badge-amber">\${${safeGet(priorityField)}}</span>\` : ''}`

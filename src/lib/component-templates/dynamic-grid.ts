@@ -170,58 +170,58 @@ ${buildFetchHook("DataItem", endpointUrl, "DataItem")}
 export function DataCardList() {
   const { data, loading, error } = useDataItemData();
 
-  if (loading) return <div className="p-4 text-sm text-zinc-500 font-mono">Loading...</div>;
-  if (error) return <div className="p-4 text-sm text-rose-500 font-mono">Error: {error}</div>;
+  if (loading) return <div style={{ padding: "1rem", fontSize: "0.875rem", color: "#71717a", fontFamily: "monospace" }}>Loading...</div>;
+  if (error) return <div style={{ padding: "1rem", fontSize: "0.875rem", color: "#ef4444", fontFamily: "monospace" }}>Error: {error}</div>;
   if (!data) return null;
 
   const items = Array.isArray(data) ? data : [data];
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 font-sans">
+    <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}>
       {items.map((item, idx) => (
         <div
           key={String(${renderPropAccess(idField)} ?? idx)}
-          className="flex flex-col justify-between rounded-xl border border-zinc-200 dark:border-zinc-800 p-4 shadow-sm hover:shadow-md transition-shadow bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
+          style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", borderRadius: "12px", border: "1px solid #e4e4e7", padding: "1rem", backgroundColor: "#ffffff", boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)" }}
         >
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
 ${
     avatarField
         ? `              {${renderPropAccess(avatarField)} ? (
                 <img
                   src={String(${renderPropAccess(avatarField)})}
                   alt="Avatar"
-                  className="h-11 w-11 rounded-full object-cover shrink-0 border border-zinc-200 dark:border-zinc-700 shadow-xs"
+                  style={{ height: "2.75rem", width: "2.75rem", borderRadius: "9999px", objectFit: "cover", flexShrink: 0, border: "1px solid #e4e4e7" }}
                 />
               ) : (
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 font-bold text-zinc-600 dark:text-zinc-300 shrink-0 border border-zinc-200/50 dark:border-zinc-700/50">
+                <div style={{ display: "flex", height: "2.75rem", width: "2.75rem", alignItems: "center", justifyContent: "center", borderRadius: "9999px", backgroundColor: "#f4f4f5", fontWeight: 700, color: "#52525b", flexShrink: 0, border: "1px solid #e4e4e7" }}>
                   {${titleField ? `String(${renderPropAccess(titleField)} ?? "").charAt(0).toUpperCase() || ` : ""} "#"}
                 </div>
               )}`
-        : `              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800 font-bold text-zinc-600 dark:text-zinc-300 shrink-0 border border-zinc-200/50 dark:border-zinc-700/50">
+        : `              <div style={{ display: "flex", height: "2.75rem", width: "2.75rem", alignItems: "center", justifyContent: "center", borderRadius: "8px", backgroundColor: "#f4f4f5", fontWeight: 700, color: "#52525b", flexShrink: 0, border: "1px solid #e4e4e7" }}>
                 {${titleField ? `String(${renderPropAccess(titleField)} ?? "").charAt(0).toUpperCase() || ` : ""} "D"}
               </div>`
 }
-              <div className="min-w-0 flex-1">
+              <div style={{ minWidth: 0, flex: 1 }}>
 ${
     titleField
-        ? `                <h4 className="truncate font-semibold text-sm text-zinc-900 dark:text-zinc-100">{${renderPropAccess(titleField)}}</h4>\n`
-        : `                <h4 className="truncate font-semibold text-sm text-zinc-900 dark:text-zinc-100">Item #{idx + 1}</h4>\n`
-}${subtitleField ? `                <p className="truncate text-xs text-zinc-500 dark:text-zinc-400 font-mono mt-0.5">{${renderPropAccess(subtitleField)}}</p>\n` : ""}              </div>
+        ? `                <h4 style={{ margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 600, fontSize: "0.875rem", color: "#18181b" }}>{${renderPropAccess(titleField)}}</h4>\n`
+        : `                <h4 style={{ margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 600, fontSize: "0.875rem", color: "#18181b" }}>Item #{idx + 1}</h4>\n`
+}${subtitleField ? `                <p style={{ margin: "0.125rem 0 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "0.75rem", color: "#71717a", fontFamily: "monospace" }}>{${renderPropAccess(subtitleField)}}</p>\n` : ""}              </div>
             </div>
 
-${descriptionField ? `            <p className="text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed line-clamp-2">{${renderPropAccess(descriptionField)}}</p>\n` : ""}          </div>
+${descriptionField ? `            <p style={{ margin: 0, fontSize: "0.75rem", color: "#52525b", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{${renderPropAccess(descriptionField)}}</p>\n` : ""}          </div>
 
 ${
     detailFields.length > 0
-        ? `          <div className="mt-4 pt-3 border-t border-zinc-100 dark:border-zinc-800 text-xs space-y-1.5">
+        ? `          <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px solid #f4f4f5", fontSize: "0.75rem", display: "flex", flexDirection: "column", gap: "0.375rem" }}>
 ${detailFields
     .map((f) => {
         const propAccess = renderPropAccess(f.fieldName);
         return `            {${propAccess} !== undefined && (
-              <div className="flex justify-between items-center gap-2">
-                <span className="text-zinc-400 font-mono text-[11px] font-medium">${f.fieldName}:</span>
-                <span className="font-mono text-zinc-700 dark:text-zinc-300 truncate text-[11px]">{String(${propAccess})}</span>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem" }}>
+                <span style={{ color: "#a1a1aa", fontFamily: "monospace", fontSize: "11px", fontWeight: 500 }}>${f.fieldName}:</span>
+                <span style={{ fontFamily: "monospace", color: "#3f3f46", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "11px" }}>{String(${propAccess})}</span>
               </div>
             )}`;
     })
@@ -338,7 +338,7 @@ ${detailFields
             : "";
         const detailsHtml =
             detailFields.length > 0
-                ? `<div class="details">\${[${detailFields.map((f) => `[${JSON.stringify(f.fieldName)}, item[${JSON.stringify(f.fieldName)}]]`).join(", ")}].filter(([,v]) => v !== undefined).map(([k,v]) => \`<div class="detail-row"><span class="detail-key">\${k}:</span><span>\${v}</span></div>\`).join('')}</div>`
+                ? `<div class="details">\${[${detailFields.map((f) => `[${JSON.stringify(f.fieldName)}, ${safeGet(f.fieldName)}]`).join(", ")}].filter(([,v]) => v !== undefined && v !== '').map(([k,v]) => \`<div class="detail-row"><span class="detail-key">\${k}:</span><span>\${v}</span></div>\`).join('')}</div>`
                 : "";
 
         const renderFn = `item => \`<div class="card">

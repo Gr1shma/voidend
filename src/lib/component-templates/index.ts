@@ -32,12 +32,14 @@ function fieldMatches(fieldNameNormalized: string, candidateNormalized: string):
 
 /**
  * Scores every template against the given schema fields and endpoint URL path.
+ * Matches against field $faker dataTypes (and fieldNames as fallback).
  * requiredFields matches are weighted heavily (10x);
  * path segment matches add a strong boost (8x);
  * optionalFields matches add a smaller boost.
  */
 export function matchTemplates(fields: SchemaField[], endpointPath: string = ""): TemplateMatch[] {
     const normalizedFieldNames = fields.map((f) => normalize(f.fieldName));
+    const normalizedDataTypes = fields.map((f) => normalize(f.dataType));
     const normalizedPath = normalize(endpointPath);
 
     const results: TemplateMatch[] = COMPONENT_TEMPLATES.map((template) => {
@@ -58,13 +60,19 @@ export function matchTemplates(fields: SchemaField[], endpointPath: string = "")
 
         for (const required of template.requiredFields) {
             const normalizedRequired = normalize(required);
-            if (normalizedFieldNames.some((fn) => fieldMatches(fn, normalizedRequired))) {
+            if (
+                normalizedDataTypes.some((dt) => fieldMatches(dt, normalizedRequired)) ||
+                normalizedFieldNames.some((fn) => fieldMatches(fn, normalizedRequired))
+            ) {
                 matchedFields.push(required);
             }
         }
         for (const optional of template.optionalFields) {
             const normalizedOptional = normalize(optional);
-            if (normalizedFieldNames.some((fn) => fieldMatches(fn, normalizedOptional))) {
+            if (
+                normalizedDataTypes.some((dt) => fieldMatches(dt, normalizedOptional)) ||
+                normalizedFieldNames.some((fn) => fieldMatches(fn, normalizedOptional))
+            ) {
                 matchedFields.push(optional);
             }
         }

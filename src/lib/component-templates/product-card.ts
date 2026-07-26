@@ -1,6 +1,8 @@
 import type { ComponentTemplate } from "./types";
 import {
     findField,
+    findFieldByDataType,
+    mapTsType,
     buildFetchHook,
     buildInterface,
     buildHtmlFetchScript,
@@ -12,34 +14,66 @@ export const productCardTemplate: ComponentTemplate = {
     id: "product-card",
     name: "Product Card",
     description: "Image + product info card. Gracefully handles present/absent images & tags.",
-    requiredFields: ["name", "price", "productname", "amount"],
-    optionalFields: ["description", "category", "image", "inStock", "rating", "brand", "id"],
+    requiredFields: [
+        "$faker.commerce.productName",
+        "$faker.commerce.product",
+        "$faker.commerce.price",
+        "$faker.finance.amount",
+    ],
+    optionalFields: [
+        "$faker.commerce.productDescription",
+        "$faker.commerce.department",
+        "$faker.company.name",
+        "$faker.image.url",
+        "$faker.datatype.boolean",
+        "$faker.number.float",
+        "$faker.string.uuid",
+    ],
     code: (fields, endpointUrl) => {
-        const idField = findField(fields, ["id", "productid", "uuid"]) ?? "id";
-        const nameField = findField(fields, ["name", "productname", "title"]) ?? "name";
-        const priceField = findField(fields, ["price", "amount", "cost"]) ?? "price";
-        const imageField = findField(fields, ["image", "photo", "picture", "thumbnail", "cover"]);
-        const descriptionField = findField(fields, [
-            "description",
-            "productdescription",
-            "summary",
-        ]);
-        const categoryField = findField(fields, ["category", "department", "genre"]);
-        const brandField = findField(fields, ["brand", "company", "manufacturer"]);
-        const inStockField = findField(fields, ["instock", "available", "isinstock"]);
-        const ratingField = findField(fields, ["rating", "score", "stars"]);
+        const idField =
+            findFieldByDataType(fields, ["string.uuid", "string.nanoid", "number.int"]) ??
+            findField(fields, ["id", "productid", "uuid"]) ??
+            fields[0]?.fieldName ??
+            "id";
+        const nameField =
+            findFieldByDataType(fields, [
+                "commerce.productName",
+                "commerce.product",
+                "food.dish",
+                "vehicle.vehicle",
+            ]) ??
+            findField(fields, ["name", "productname", "title"]) ??
+            "name";
+        const priceField =
+            findFieldByDataType(fields, ["commerce.price", "finance.amount"]) ??
+            findField(fields, ["price", "amount", "cost"]) ??
+            "price";
+        const imageField =
+            findFieldByDataType(fields, ["image.url", "image.datauri"]) ??
+            findField(fields, ["image", "photo", "picture", "thumbnail", "cover"]);
+        const descriptionField =
+            findFieldByDataType(fields, [
+                "commerce.productDescription",
+                "lorem.paragraph",
+                "company.catchPhrase",
+            ]) ?? findField(fields, ["description", "productdescription", "summary"]);
+        const categoryField =
+            findFieldByDataType(fields, ["commerce.department", "book.genre"]) ??
+            findField(fields, ["category", "department", "genre"]);
+        const brandField =
+            findFieldByDataType(fields, ["company.name", "vehicle.manufacturer"]) ??
+            findField(fields, ["brand", "company", "manufacturer"]);
+        const inStockField =
+            findFieldByDataType(fields, ["datatype.boolean"]) ??
+            findField(fields, ["instock", "available", "isinstock"]);
+        const ratingField =
+            findFieldByDataType(fields, ["number.float", "number.int"]) ??
+            findField(fields, ["rating", "score", "stars"]);
 
-        const interfaceLines = [
-            `${idField}: string;`,
-            `${nameField}: string;`,
-            `${priceField}: string | number;`,
-        ];
-        if (imageField) interfaceLines.push(`${imageField}: string;`);
-        if (descriptionField) interfaceLines.push(`${descriptionField}: string;`);
-        if (categoryField) interfaceLines.push(`${categoryField}: string;`);
-        if (brandField) interfaceLines.push(`${brandField}: string;`);
-        if (inStockField) interfaceLines.push(`${inStockField}: boolean;`);
-        if (ratingField) interfaceLines.push(`${ratingField}: string | number;`);
+        const interfaceLines = fields.map((f) => {
+            const name = f.fieldName.includes(".") ? `"${f.fieldName}"?` : f.fieldName;
+            return `${name}: ${mapTsType(f.dataType)};`;
+        });
 
         return `import { useEffect, useState } from "react";
 
@@ -50,46 +84,46 @@ ${buildFetchHook("ProductCard", endpointUrl, "Product")}
 export function ProductCard() {
   const { data, loading, error } = useProductCardData();
 
-  if (loading) return <div className="p-4 text-sm text-gray-500">Loading...</div>;
-  if (error) return <div className="p-4 text-sm text-red-500">Error: {error}</div>;
+  if (loading) return <div style={{ padding: "1rem", fontSize: "0.875rem", color: "#71717a" }}>Loading...</div>;
+  if (error) return <div style={{ padding: "1rem", fontSize: "0.875rem", color: "#ef4444" }}>Error: {error}</div>;
   if (!data) return null;
 
   const products = Array.isArray(data) ? data : [data];
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}>
       {products.map((product) => (
-        <div key={product.${idField}} className="flex flex-col justify-between overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm hover:shadow-md transition-shadow">
+        <div key={product.${idField}} style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", overflow: "hidden", borderRadius: "12px", border: "1px solid #e4e4e7", backgroundColor: "#ffffff", boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)" }}>
           <div>
 ${
     imageField
         ? `            {product.${imageField} ? (
-              <img src={product.${imageField}} alt={product.${nameField}} className="h-44 w-full object-cover" />
+              <img src={product.${imageField}} alt={product.${nameField}} style={{ height: "11rem", width: "100%", objectFit: "cover" }} />
             ) : (
-              <div className="flex h-36 w-full items-center justify-center bg-zinc-100 dark:bg-zinc-800 text-3xl text-zinc-400">
+              <div style={{ display: "flex", height: "9rem", width: "100%", alignItems: "center", justifyContent: "center", backgroundColor: "#f4f4f5", fontSize: "1.875rem", color: "#a1a1aa" }}>
                 📦
               </div>
             )}`
-        : `            <div className="flex h-24 w-full items-center justify-center bg-zinc-100 dark:bg-zinc-800 text-3xl text-zinc-400">
+        : `            <div style={{ display: "flex", height: "6rem", width: "100%", alignItems: "center", justifyContent: "center", backgroundColor: "#f4f4f5", fontSize: "1.875rem", color: "#a1a1aa" }}>
               📦
             </div>`
 }
-            <div className="p-4 space-y-2">
-              <div className="flex items-center justify-between gap-2">
-${categoryField ? `                {product.${categoryField} && <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-muted-foreground">{product.${categoryField}}</span>}\n` : ""}${brandField ? `                {product.${brandField} && <span className="text-[10px] font-mono text-zinc-400">{product.${brandField}}</span>}\n` : ""}              </div>
-              <p className="font-semibold text-base text-zinc-900 dark:text-zinc-100 truncate">{product.${nameField}}</p>
-${descriptionField ? `              {product.${descriptionField} && <p className="line-clamp-2 text-xs text-zinc-500 dark:text-zinc-400">{product.${descriptionField}}</p>}\n` : ""}            </div>
+            <div style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem" }}>
+${categoryField ? `                {product.${categoryField} && <span style={{ fontSize: "10px", fontFamily: "monospace", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "#71717a" }}>{product.${categoryField}}</span>}\n` : ""}${brandField ? `                {product.${brandField} && <span style={{ fontSize: "10px", fontFamily: "monospace", color: "#a1a1aa" }}>{product.${brandField}}</span>}\n` : ""}              </div>
+              <p style={{ margin: 0, fontWeight: 600, fontSize: "1rem", color: "#18181b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{product.${nameField}}</p>
+${descriptionField ? `              {product.${descriptionField} && <p style={{ margin: 0, fontSize: "0.75rem", color: "#71717a", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{product.${descriptionField}}</p>}\n` : ""}            </div>
           </div>
 
-          <div className="px-4 pb-4 pt-2 flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800">
+          <div style={{ padding: "0.5rem 1rem 1rem 1rem", display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid #f4f4f5" }}>
             <div>
-              <span className="text-lg font-bold text-zinc-900 dark:text-zinc-100">\${product.${priceField}}</span>
-${ratingField ? `              {product.${ratingField} && <span className="ml-2 text-xs text-amber-500">Rating: {product.${ratingField}}</span>}\n` : ""}            </div>
+              <span style={{ fontSize: "1.125rem", fontWeight: 700, color: "#18181b" }}>\${product.${priceField}}</span>
+${ratingField ? `              {product.${ratingField} && <span style={{ marginLeft: "0.5rem", fontSize: "0.75rem", color: "#f59e0b" }}>Rating: {product.${ratingField}}</span>}\n` : ""}            </div>
 
 ${
     inStockField
         ? `            {product.${inStockField} !== undefined && (
-              <span className={product.${inStockField} ? "px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" : "px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"}>
+              <span style={{ padding: "0.125rem 0.5rem", fontSize: "10px", fontFamily: "monospace", fontWeight: 600, borderRadius: "4px", backgroundColor: product.${inStockField} ? "#d1fae5" : "#ffe4e6", color: product.${inStockField} ? "#065f46" : "#9f1239" }}>
                 {product.${inStockField} ? "In stock" : "Out of stock"}
               </span>
             )}\n`
@@ -103,18 +137,40 @@ ${
 `;
     },
     htmlCode: (fields, endpointUrl) => {
-        const nameField = findField(fields, ["name", "productname", "title"]) ?? "name";
-        const priceField = findField(fields, ["price", "amount", "cost"]) ?? "price";
-        const imageField = findField(fields, ["image", "photo", "picture", "thumbnail", "cover"]);
-        const descriptionField = findField(fields, [
-            "description",
-            "productdescription",
-            "summary",
-        ]);
-        const categoryField = findField(fields, ["category", "department", "genre"]);
-        const brandField = findField(fields, ["brand", "company", "manufacturer"]);
-        const inStockField = findField(fields, ["instock", "available", "isinstock"]);
-        const ratingField = findField(fields, ["rating", "score", "stars"]);
+        const nameField =
+            findFieldByDataType(fields, [
+                "commerce.productName",
+                "commerce.product",
+                "food.dish",
+                "vehicle.vehicle",
+            ]) ??
+            findField(fields, ["name", "productname", "title"]) ??
+            "name";
+        const priceField =
+            findFieldByDataType(fields, ["commerce.price", "finance.amount"]) ??
+            findField(fields, ["price", "amount", "cost"]) ??
+            "price";
+        const imageField =
+            findFieldByDataType(fields, ["image.url", "image.datauri"]) ??
+            findField(fields, ["image", "photo", "picture", "thumbnail", "cover"]);
+        const descriptionField =
+            findFieldByDataType(fields, [
+                "commerce.productDescription",
+                "lorem.paragraph",
+                "company.catchPhrase",
+            ]) ?? findField(fields, ["description", "productdescription", "summary"]);
+        const categoryField =
+            findFieldByDataType(fields, ["commerce.department", "book.genre"]) ??
+            findField(fields, ["category", "department", "genre"]);
+        const brandField =
+            findFieldByDataType(fields, ["company.name", "vehicle.manufacturer"]) ??
+            findField(fields, ["brand", "company", "manufacturer"]);
+        const inStockField =
+            findFieldByDataType(fields, ["datatype.boolean"]) ??
+            findField(fields, ["instock", "available", "isinstock"]);
+        const ratingField =
+            findFieldByDataType(fields, ["number.float", "number.int"]) ??
+            findField(fields, ["rating", "score", "stars"]);
 
         const imgHtml = imageField
             ? `\${${safeGet(imageField)} ? \`<img class="product-img" src="\${${safeGet(imageField)}}" alt="product">\` : '<div class="product-img-placeholder">📦</div>'}`

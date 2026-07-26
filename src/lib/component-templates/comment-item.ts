@@ -1,6 +1,8 @@
 import type { ComponentTemplate } from "./types";
 import {
     findField,
+    findFieldByDataType,
+    mapTsType,
     buildFetchHook,
     buildInterface,
     buildHtmlFetchScript,
@@ -12,24 +14,47 @@ export const commentItemTemplate: ComponentTemplate = {
     id: "comment-item",
     name: "Comment Item",
     description: "Avatar + author + comment text list. Handles single or list response.",
-    requiredFields: ["comment", "author"],
-    optionalFields: ["avatar", "createdAt", "id"],
+    requiredFields: [
+        "$faker.lorem.paragraph",
+        "$faker.lorem.sentence",
+        "$faker.person.fullName",
+        "$faker.internet.username",
+    ],
+    optionalFields: [
+        "$faker.image.avatar",
+        "$faker.date.recent",
+        "$faker.date.past",
+        "$faker.string.uuid",
+    ],
     code: (fields, endpointUrl) => {
-        const idField = findField(fields, ["id", "commentid", "uuid"]) ?? "id";
+        const idField =
+            findFieldByDataType(fields, ["string.uuid", "string.nanoid", "number.int"]) ??
+            findField(fields, ["id", "commentid", "uuid"]) ??
+            fields[0]?.fieldName ??
+            "id";
         const authorField =
-            findField(fields, ["author", "fullname", "username", "name"]) ?? "author";
+            findFieldByDataType(fields, [
+                "person.fullName",
+                "person.firstName",
+                "internet.username",
+            ]) ??
+            findField(fields, ["author", "fullname", "username", "name"]) ??
+            "author";
         const commentField =
-            findField(fields, ["comment", "message", "content", "text"]) ?? "comment";
-        const avatarField = findField(fields, ["avatar", "image", "photo"]);
-        const createdAtField = findField(fields, ["createdat", "date", "timestamp"]);
+            findFieldByDataType(fields, ["lorem.paragraph", "lorem.sentence", "lorem.sentences"]) ??
+            findField(fields, ["comment", "message", "content", "text"]) ??
+            "comment";
+        const avatarField =
+            findFieldByDataType(fields, ["image.avatar", "image.url", "image.datauri"]) ??
+            findField(fields, ["avatar", "image", "photo"]);
+        const createdAtField =
+            findFieldByDataType(fields, ["date.recent", "date.past", "date.anytime"]) ??
+            findField(fields, ["createdat", "date", "timestamp"]);
 
-        const interfaceLines = [
-            `${idField}: string;`,
-            `${authorField}: string;`,
-            `${commentField}: string;`,
-        ];
-        if (avatarField) interfaceLines.push(`${avatarField}: string;`);
-        if (createdAtField) interfaceLines.push(`${createdAtField}: string;`);
+        const interfaceLines = fields.map((f) => {
+            const name = f.fieldName.includes(".") ? `"${f.fieldName}"?` : f.fieldName;
+            return `${name}: ${mapTsType(f.dataType)};`;
+        });
 
         return `import { useEffect, useState } from "react";
 
@@ -40,21 +65,21 @@ ${buildFetchHook("CommentItem", endpointUrl, "Comment")}
 export function CommentList() {
   const { data, loading, error } = useCommentItemData();
 
-  if (loading) return <div className="p-4 text-sm text-gray-500">Loading...</div>;
-  if (error) return <div className="p-4 text-sm text-red-500">Error: {error}</div>;
+  if (loading) return <div style={{ padding: "1rem", fontSize: "0.875rem", color: "#71717a" }}>Loading...</div>;
+  if (error) return <div style={{ padding: "1rem", fontSize: "0.875rem", color: "#ef4444" }}>Error: {error}</div>;
   if (!data) return null;
 
   const comments = Array.isArray(data) ? data : [data];
 
   return (
-    <div className="space-y-3">
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
       {comments.map((comment) => (
-        <div key={comment.${idField}} className="flex gap-3">
-${avatarField ? `          <img src={comment.${avatarField}} alt={comment.${authorField}} className="h-8 w-8 rounded-full object-cover" />\n` : ""}          <div className="min-w-0 flex-1 rounded-lg border p-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">{comment.${authorField}}</span>
-${createdAtField ? `              <span className="text-xs text-gray-400">{comment.${createdAtField}}</span>\n` : ""}            </div>
-            <p className="mt-1 text-sm text-gray-600">{comment.${commentField}}</p>
+        <div key={comment.${idField}} style={{ display: "flex", gap: "0.75rem" }}>
+${avatarField ? `          <img src={comment.${avatarField}} alt={comment.${authorField}} style={{ height: "2rem", width: "2rem", borderRadius: "9999px", objectFit: "cover", flexShrink: 0 }} />\n` : ""}          <div style={{ minWidth: 0, flex: 1, borderRadius: "12px", border: "1px solid #e4e4e7", padding: "0.75rem", backgroundColor: "#ffffff" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#18181b" }}>{comment.${authorField}}</span>
+${createdAtField ? `              <span style={{ fontSize: "0.75rem", color: "#a1a1aa" }}>{comment.${createdAtField}}</span>\n` : ""}            </div>
+            <p style={{ marginTop: "0.25rem", marginBottom: 0, fontSize: "0.875rem", color: "#52525b", lineHeight: 1.5 }}>{comment.${commentField}}</p>
           </div>
         </div>
       ))}
@@ -65,11 +90,23 @@ ${createdAtField ? `              <span className="text-xs text-gray-400">{comme
     },
     htmlCode: (fields, endpointUrl) => {
         const authorField =
-            findField(fields, ["author", "fullname", "username", "name"]) ?? "author";
+            findFieldByDataType(fields, [
+                "person.fullName",
+                "person.firstName",
+                "internet.username",
+            ]) ??
+            findField(fields, ["author", "fullname", "username", "name"]) ??
+            "author";
         const commentField =
-            findField(fields, ["comment", "message", "content", "text"]) ?? "comment";
-        const avatarField = findField(fields, ["avatar", "image", "photo"]);
-        const createdAtField = findField(fields, ["createdat", "date", "timestamp"]);
+            findFieldByDataType(fields, ["lorem.paragraph", "lorem.sentence", "lorem.sentences"]) ??
+            findField(fields, ["comment", "message", "content", "text"]) ??
+            "comment";
+        const avatarField =
+            findFieldByDataType(fields, ["image.avatar", "image.url", "image.datauri"]) ??
+            findField(fields, ["avatar", "image", "photo"]);
+        const createdAtField =
+            findFieldByDataType(fields, ["date.recent", "date.past", "date.anytime"]) ??
+            findField(fields, ["createdat", "date", "timestamp"]);
 
         const avatarHtml = avatarField
             ? `\${${safeGet(avatarField)} ? \`<img class="avatar" style="flex-shrink:0;align-self:flex-start" src="\${${safeGet(avatarField)}}" alt="avatar">\` : \`<div class="avatar-placeholder" style="flex-shrink:0;align-self:flex-start">\${String(${safeGet(authorField)}).charAt(0).toUpperCase() || 'U'}</div>\`}`

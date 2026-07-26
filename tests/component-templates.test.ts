@@ -14,25 +14,41 @@ import { productCardTemplate } from "~/lib/component-templates/product-card";
 import { todoListTemplate } from "~/lib/component-templates/todo-list";
 import { transactionRowTemplate } from "~/lib/component-templates/transaction-row";
 import { commentItemTemplate } from "~/lib/component-templates/comment-item";
-import { findField, buildFetchHook, buildInterface } from "~/lib/component-templates/codegen-utils";
+import {
+    findField,
+    findFieldByDataType,
+    buildFetchHook,
+    buildInterface,
+} from "~/lib/component-templates/codegen-utils";
 
 describe("Component Templates Library", () => {
     describe("matchTemplates & getTopMatches", () => {
-        it("should rank specialized templates (e.g. user-card) when fields match user schema", () => {
+        it("should rank specialized templates (e.g. user-card) when $faker data types match", () => {
             const fields = [
-                { id: "1", fieldName: "username", dataType: "$faker.internet.username" },
-                { id: "2", fieldName: "email", dataType: "$faker.internet.email" },
+                { id: "1", fieldName: "val_a", dataType: "$faker.person.fullName" },
+                { id: "2", fieldName: "val_b", dataType: "$faker.internet.username" },
             ];
-            const matches = getTopMatches(fields, "/api/users");
+            const matches = getTopMatches(fields, "/api/custom-users");
 
             expect(matches.length).toBeGreaterThan(0);
             expect(matches[0]!.template.id).toBe("user-card");
         });
 
+        it("should rank post-card when $faker data types for title and content match", () => {
+            const fields = [
+                { id: "1", fieldName: "f_title", dataType: "$faker.book.title" },
+                { id: "2", fieldName: "f_body", dataType: "$faker.lorem.paragraph" },
+            ];
+            const matches = getTopMatches(fields, "/api/articles");
+
+            expect(matches.length).toBeGreaterThan(0);
+            expect(matches[0]!.template.id).toBe("post-card");
+        });
+
         it("should rank dynamicGridTemplate when path keyword matches", () => {
             const fields = fieldsFromSchema({
-                id: "uuid",
-                name: "fullName",
+                id: "$faker.string.uuid",
+                name: "$faker.person.fullName",
             });
             const matches = matchTemplates(fields, "/users");
             expect(matches.some((m) => m.template.id === "dynamic-grid")).toBe(true);
@@ -40,6 +56,17 @@ describe("Component Templates Library", () => {
     });
 
     describe("codegen-utils", () => {
+        it("findFieldByDataType matches fields by $faker dataType pattern regardless of field key", () => {
+            const fields = [
+                { id: "1", fieldName: "prop_1", dataType: "$faker.person.fullName" },
+                { id: "2", fieldName: "prop_2", dataType: "$faker.internet.email" },
+            ];
+
+            expect(findFieldByDataType(fields, ["person.fullName"])).toBe("prop_1");
+            expect(findFieldByDataType(fields, ["internet.email"])).toBe("prop_2");
+            expect(findFieldByDataType(fields, ["nonexistent"])).toBeUndefined();
+        });
+
         it("findField case and separator insensitively matches schema field names", () => {
             const fields = [
                 { id: "1", fieldName: "user_name", dataType: "$faker.internet.username" },
@@ -64,6 +91,119 @@ describe("Component Templates Library", () => {
             expect(code).toContain("function useUserData()");
             expect(code).toContain('fetch("https://api.mock.test/users")');
             expect(code).toContain("setData(json)");
+        });
+    });
+
+    describe("React Component Templates (No Tailwind CSS & Fully Dynamic)", () => {
+        it("userCardTemplate generates React code without Tailwind CSS classes and works with arbitrary field keys", () => {
+            const fields = [
+                { id: "1", fieldName: "col_id", dataType: "$faker.string.uuid" },
+                { id: "2", fieldName: "col_name", dataType: "$faker.person.fullName" },
+                { id: "3", fieldName: "col_user", dataType: "$faker.internet.username" },
+                { id: "4", fieldName: "col_img", dataType: "$faker.image.avatar" },
+                { id: "5", fieldName: "col_bio", dataType: "$faker.person.bio" },
+            ];
+
+            const code = generateCode(userCardTemplate, fields, "https://mock.api/v1/users");
+
+            expect(code).not.toContain('className="');
+            expect(code).toContain("style={{");
+            expect(code).toContain("col_id");
+            expect(code).toContain("col_name");
+            expect(code).toContain("col_user");
+            expect(code).toContain("col_img");
+            expect(code).toContain("col_bio");
+        });
+
+        it("postCardTemplate generates React code without Tailwind CSS classes", () => {
+            const fields = [
+                { id: "1", fieldName: "x_id", dataType: "$faker.string.uuid" },
+                { id: "2", fieldName: "x_title", dataType: "$faker.book.title" },
+                { id: "3", fieldName: "x_content", dataType: "$faker.lorem.paragraph" },
+                { id: "4", fieldName: "x_author", dataType: "$faker.person.fullName" },
+            ];
+
+            const code = generateCode(postCardTemplate, fields, "https://mock.api/v1/posts");
+
+            expect(code).not.toContain('className="');
+            expect(code).toContain("style={{");
+            expect(code).toContain("x_title");
+            expect(code).toContain("x_content");
+        });
+
+        it("productCardTemplate generates React code without Tailwind CSS classes", () => {
+            const fields = [
+                { id: "1", fieldName: "p_id", dataType: "$faker.string.uuid" },
+                { id: "2", fieldName: "p_name", dataType: "$faker.commerce.productName" },
+                { id: "3", fieldName: "p_price", dataType: "$faker.commerce.price" },
+                { id: "4", fieldName: "p_stock", dataType: "$faker.datatype.boolean" },
+            ];
+
+            const code = generateCode(productCardTemplate, fields, "https://mock.api/v1/products");
+
+            expect(code).not.toContain('className="');
+            expect(code).toContain("style={{");
+            expect(code).toContain("p_name");
+            expect(code).toContain("p_price");
+        });
+
+        it("todoListTemplate generates React code without Tailwind CSS classes", () => {
+            const fields = [
+                { id: "1", fieldName: "t_id", dataType: "$faker.string.uuid" },
+                { id: "2", fieldName: "t_words", dataType: "$faker.lorem.words" },
+                { id: "3", fieldName: "t_done", dataType: "$faker.datatype.boolean" },
+            ];
+
+            const code = generateCode(todoListTemplate, fields, "https://mock.api/v1/todos");
+
+            expect(code).not.toContain('className="');
+            expect(code).toContain("style={{");
+            expect(code).toContain("t_words");
+            expect(code).toContain("t_done");
+        });
+
+        it("transactionRowTemplate generates React code without Tailwind CSS classes", () => {
+            const fields = [
+                { id: "1", fieldName: "tx_id", dataType: "$faker.string.uuid" },
+                { id: "2", fieldName: "tx_val", dataType: "$faker.finance.amount" },
+                { id: "3", fieldName: "tx_date", dataType: "$faker.date.recent" },
+            ];
+
+            const code = generateCode(transactionRowTemplate, fields, "https://mock.api/v1/tx");
+
+            expect(code).not.toContain('className="');
+            expect(code).toContain("style={{");
+            expect(code).toContain("tx_val");
+            expect(code).toContain("tx_date");
+        });
+
+        it("commentItemTemplate generates React code without Tailwind CSS classes", () => {
+            const fields = [
+                { id: "1", fieldName: "c_id", dataType: "$faker.string.uuid" },
+                { id: "2", fieldName: "c_author", dataType: "$faker.person.fullName" },
+                { id: "3", fieldName: "c_text", dataType: "$faker.lorem.paragraph" },
+            ];
+
+            const code = generateCode(commentItemTemplate, fields, "https://mock.api/v1/comments");
+
+            expect(code).not.toContain('className="');
+            expect(code).toContain("style={{");
+            expect(code).toContain("c_author");
+            expect(code).toContain("c_text");
+        });
+
+        it("dynamicGridTemplate generates React code without Tailwind CSS classes", () => {
+            const fields = [
+                { id: "1", fieldName: "field_a", dataType: "$faker.string.uuid" },
+                { id: "2", fieldName: "field_b", dataType: "$faker.person.fullName" },
+            ];
+
+            const code = generateCode(dynamicGridTemplate, fields, "https://mock.api/v1/grid");
+
+            expect(code).not.toContain('className="');
+            expect(code).toContain("style={{");
+            expect(code).toContain("field_a");
+            expect(code).toContain("field_b");
         });
     });
 
