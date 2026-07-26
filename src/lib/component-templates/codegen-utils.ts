@@ -28,9 +28,6 @@ export function mapTsType(dt: string): string {
     return "string";
 }
 
-/**
- * Finds a field based on matching its faker dataType string.
- */
 export function findFieldByDataType(
     fields: SchemaField[],
     dataTypePatterns: string[],
@@ -41,9 +38,6 @@ export function findFieldByDataType(
     })?.fieldName;
 }
 
-/**
- * Finds all fields matching any of the given faker dataType patterns.
- */
 export function filterFieldsByDataType(
     fields: SchemaField[],
     dataTypePatterns: string[],
@@ -54,21 +48,12 @@ export function filterFieldsByDataType(
     });
 }
 
-/**
- * Finds the user's actual fieldName matching any of the given candidates
- * (case + separator insensitive). Returns null if none found so the
- * template can decide on a fallback.
- */
 export function findField(fields: SchemaField[], candidates: string[]): string | null {
     const normalizedCandidates = new Set(candidates.map(normalize));
     const match = fields.find((f) => normalizedCandidates.has(normalize(f.fieldName)));
     return match ? match.fieldName : null;
 }
 
-/**
- * Builds a fetch hook that handles both response shapes from the mock
- * endpoint: a single object (count === 1) or an array (count > 1).
- */
 export function buildFetchHook(
     hookName: string,
     endpointUrl: string,
@@ -112,11 +97,6 @@ ${fieldLines.map((l) => `  ${l}`).join("\n")}
 }`;
 }
 
-/**
- * Builds a vanilla-JS fetch + DOM-render script block for HTML templates.
- * `renderFn` is a JS expression (string) that maps a single item to an
- * HTML string, the caller provides the item-level template string.
- */
 export function buildHtmlFetchScript(
     endpointUrl: string,
     renderFn: string,
@@ -151,10 +131,6 @@ export function buildHtmlFetchScript(
   loadData();`;
 }
 
-/**
- * Returns a baseline CSS string used by all HTML templates:
- * custom properties for color, card grid, avatar, etc.
- */
 export function buildHtmlStyles(): string {
     return `  :root {
     --bg: #ffffff;

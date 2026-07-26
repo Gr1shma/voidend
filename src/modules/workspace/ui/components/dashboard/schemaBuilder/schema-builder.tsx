@@ -330,7 +330,7 @@ export function SchemaBuilder({
                                                             setFields(fieldsFromSchema(parsed));
                                                             setJsonError(null);
                                                         } catch {
-                                                            // Keep current fields if invalid
+                                                            // keep current fields
                                                         }
                                                     }
                                                     setEditorMode("flat");

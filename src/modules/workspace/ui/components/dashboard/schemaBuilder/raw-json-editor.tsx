@@ -54,7 +54,6 @@ export function RawJsonEditor({
         const target = e.currentTarget;
         const { selectionStart, selectionEnd, value: val } = target;
 
-        // Convert single quote to double quote
         if (e.key === "'") {
             e.preventDefault();
             const before = val.substring(0, selectionStart);
@@ -67,7 +66,6 @@ export function RawJsonEditor({
             return;
         }
 
-        // Auto-pair double quotes
         if (e.key === '"') {
             if (selectionStart === selectionEnd && val[selectionStart] === '"') {
                 e.preventDefault();
@@ -87,7 +85,6 @@ export function RawJsonEditor({
             return;
         }
 
-        // Auto-pair braces and brackets
         if (e.key === "{" || e.key === "[") {
             const closing = e.key === "{" ? "}" : "]";
             e.preventDefault();
@@ -103,7 +100,6 @@ export function RawJsonEditor({
             return;
         }
 
-        // Tab key -> 2 spaces
         if (e.key === "Tab") {
             e.preventDefault();
             const before = val.substring(0, selectionStart);
@@ -116,7 +112,6 @@ export function RawJsonEditor({
             return;
         }
 
-        // Enter key -> smart auto-indent
         if (e.key === "Enter") {
             e.preventDefault();
             const lineStart = val.lastIndexOf("\n", selectionStart - 1) + 1;

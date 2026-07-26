@@ -234,7 +234,6 @@ export function fieldsFromSchema(schema: unknown, prefix = ""): SchemaField[] {
         return [];
     }
 
-    // Handle {$array: schema} wrapper format
     if ("$array" in schema && schema.$array) {
         return fieldsFromSchema((schema as { $array: unknown }).$array, prefix);
     }
@@ -244,13 +243,10 @@ export function fieldsFromSchema(schema: unknown, prefix = ""): SchemaField[] {
     for (const [key, val] of Object.entries(schema)) {
         const fullPath = prefix ? `${prefix}.${key}` : key;
         if (val && typeof val === "object" && !Array.isArray(val) && !("$array" in val)) {
-            // Nested object
             fields.push(...fieldsFromSchema(val, fullPath));
         } else if (val && typeof val === "object" && "$array" in val) {
-            // Nested array object
             fields.push(...fieldsFromSchema((val as { $array: unknown }).$array, fullPath));
         } else if (Array.isArray(val) && val.length > 0) {
-            // Primitive array
             fields.push(...fieldsFromSchema(val[0], fullPath));
         } else {
             fields.push({
@@ -286,7 +282,6 @@ export function buildSchema(schemaFields: SchemaField[]): Record<string, unknown
 
         for (let i = 0; i < parts.length - 1; i++) {
             const part = parts[i]!;
-            // If the key already exists but is not an object, overwrite it
             if (
                 typeof current[part] !== "object" ||
                 current[part] === null ||

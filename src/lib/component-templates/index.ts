@@ -30,13 +30,6 @@ function fieldMatches(fieldNameNormalized: string, candidateNormalized: string):
     );
 }
 
-/**
- * Scores every template against the given schema fields and endpoint URL path.
- * Matches against field $faker dataTypes (and fieldNames as fallback).
- * requiredFields matches are weighted heavily (10x);
- * path segment matches add a strong boost (8x);
- * optionalFields matches add a smaller boost.
- */
 export function matchTemplates(fields: SchemaField[], endpointPath: string = ""): TemplateMatch[] {
     const normalizedFieldNames = fields.map((f) => normalize(f.fieldName));
     const normalizedDataTypes = fields.map((f) => normalize(f.dataType));
@@ -45,7 +38,6 @@ export function matchTemplates(fields: SchemaField[], endpointPath: string = "")
     const results: TemplateMatch[] = COMPONENT_TEMPLATES.map((template) => {
         const matchedFields: string[] = [];
 
-        // Endpoint path keyword bonus
         let pathScoreBoost = 0;
         const templateKeywords = [
             template.id,
@@ -95,12 +87,10 @@ export function matchTemplates(fields: SchemaField[], endpointPath: string = "")
         return { template, score, matchedFields };
     });
 
-    // If template has 0 score or only path match without any fields, ensure dynamic-grid is fallback
     const matched = results
         .filter((r) => r.score > 0)
         .toSorted((a: TemplateMatch, b: TemplateMatch) => b.score - a.score);
 
-    // If dynamicGrid is not present or score is low, guarantee dynamicGrid is included at the end
     const dynamicMatch = results.find((r) => r.template.id === "dynamic-grid");
     if (dynamicMatch && !matched.some((m: TemplateMatch) => m.template.id === "dynamic-grid")) {
         matched.push(dynamicMatch);

@@ -44,7 +44,6 @@ export function ApiClientLayout({
         if (!isResizing) return;
 
         const handleMouseMove = (e: MouseEvent) => {
-            // Clamp sidebar width between 180px and 480px
             const newWidth = Math.max(180, Math.min(480, e.clientX));
             setSidebarWidth(newWidth);
         };
@@ -77,10 +76,8 @@ export function ApiClientLayout({
             ? buildMockUrl(mockOrigin, selectedProjectId, project?.basePath, endpoint.path)
             : "";
 
-    // Find the login endpoint for this project (if any)
     const loginEndpoint = allEndpoints?.find((e) => e.authConfig?.isLoginEndpoint);
 
-    // Auto-fetch a bearer token from the login endpoint whenever it changes
     const fetchBearerToken = useCallback(async () => {
         if (!loginEndpoint || !selectedProjectId) {
             setBearerToken(null);
@@ -134,7 +131,6 @@ export function ApiClientLayout({
 
     return (
         <div className="relative h-full w-full overflow-hidden">
-            {/* Absolute sidebar */}
             <aside
                 className={cn(
                     "absolute inset-y-0 left-0 z-20 flex flex-col bg-background border-r",
@@ -180,7 +176,6 @@ export function ApiClientLayout({
                     />
                 </div>
 
-                {/* Resize handle */}
                 <div
                     onMouseDown={handleMouseDown}
                     className={cn(

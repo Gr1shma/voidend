@@ -10,7 +10,6 @@ export function joinPath(...segments: Array<string | undefined | null>) {
     return path ? `/${path}` : "/";
 }
 
-/** Normalize project basePath for prefix stripping (e.g. `/api/v1`). Empty when `/`. */
 export function normalizeBasePath(basePath: string | undefined | null): string {
     if (!basePath || basePath === "/") return "";
     const cleaned = cleanSegment(basePath);
@@ -32,7 +31,6 @@ export function matchPath(pattern: string, incoming: string): boolean {
     return regex.test(incoming);
 }
 
-/** Mock route path segment after `/mock/{projectId}`, basePath + endpoint.path only. */
 export function buildMockPath(basePath: string | undefined | null, endpointPath: string): string {
     return joinPath(basePath, endpointPath);
 }
